@@ -46,8 +46,7 @@ namespace MonopolyServer.Services
             Guid gameGuid = newGame.GameId;
             _activeGames.TryAdd(gameGuid, newGame);
 
-            // OPTIONAL: Produce a "GameCreated" event to Kafka
-            var gameCreatedEvent = new { EventType = "GameCreated", GameId = gameGuid };
+            var gameCreatedEvent = new { EventType = "GameCreated", Game = newGame };
             await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameControlTopic"], new Message<string, string>
             {
                 Key = gameGuid.ToString(),
@@ -66,8 +65,8 @@ namespace MonopolyServer.Services
             Player newPlayer = new Player(playerName);
             game.AddPlayer(newPlayer);
 
-            var playerJoinedEvent = new { EventType = "PlayerJoined", GameId = gameGuid, PlayerId = newPlayer.Id, PlayerName = newPlayer.Name };
-            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
+            var playerJoinedEvent = new { EventType = "PlayerJoined", GameId = gameGuid, Players = game.ActivePlayers };
+            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameControlTopic"], new Message<string, string>
             {
                 Key = gameGuid.ToString(),
                 Value = JsonSerializer.Serialize(playerJoinedEvent)
@@ -82,7 +81,7 @@ namespace MonopolyServer.Services
             game.StartGame();
 
             var gameStartEvent = new { EventType = "GameStart", GameId = gameGuid };
-            await _kafkaProducer.ProduceAsync("game-events", new Message<string, string>
+            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameControlTopic"], new Message<string, string>
             {
                 Key = gameGuid.ToString(),
                 Value = JsonSerializer.Serialize(gameStartEvent)
@@ -97,7 +96,7 @@ namespace MonopolyServer.Services
             (int roll1, int roll2, int totalRoll, bool wasJailed, Player? jailedPlayer) = game.RollDice();
 
             var diceRolledEvent = new { EventType = "DiceRolled", GameId = gameGuid, PlayerId = playerGuid, Roll1 = roll1, Roll2 = roll2, TotalRoll = totalRoll };
-            await _kafkaProducer.ProduceAsync("game-events", new Message<string, string>
+            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
             {
                 Key = gameGuid.ToString(),
                 Value = JsonSerializer.Serialize(diceRolledEvent)
@@ -106,7 +105,7 @@ namespace MonopolyServer.Services
             if (wasJailed && jailedPlayer != null)
             {
                 var playerJailedEvent = new { EventType = "PlayerJailed", GameId = gameGuid, PlayerId = jailedPlayer.Id, TurnsInJail = 3 };
-                await _kafkaProducer.ProduceAsync("game-events", new Message<string, string>
+                await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
                 {
                     Key = gameGuid.ToString(),
                     Value = JsonSerializer.Serialize(playerJailedEvent)

@@ -39,6 +39,7 @@ namespace MonopolyServer.Services
             _logger.LogInformation("Kafka SignalR Notifier Service starting.");
 
             _kafkaConsumer.Subscribe(Configuration["Kafka:GameEventsTopic"]);
+            _kafkaConsumer.Subscribe(Configuration["Kafka:GameControlTopic"]);
 
             _ = Task.Run(async () =>
             {
@@ -58,23 +59,20 @@ namespace MonopolyServer.Services
                             {
                                 switch (eventType)
                                 {
-                                    case "DiceRolled":
-                                        Guid playerId = eventData.GetProperty("PlayerId").GetGuid();
-                                        int roll1 = eventData.GetProperty("Roll1").GetInt32();
-                                        int roll2 = eventData.GetProperty("Roll2").GetInt32();
-                                        int totalRoll = eventData.GetProperty("TotalRoll").GetInt32();
-                                        await _hubContext.Clients.Group(gameId.ToString())
-                                                        .DiceRolledResponse(playerId, roll1, roll2, totalRoll);
-                                        break;
-                                    case "PlayerJailed":
-                                        Guid jailedPlayerId = eventData.GetProperty("PlayerId").GetGuid();
-                                        await _hubContext.Clients.Group(gameId.ToString())
-                                                        .PlayerJailResponse(jailedPlayerId);
-                                        break;
+                                    #region Game Control
+                                    case "PlayerJoined":
+                                        JsonElement playerJson = eventData.GetProperty("Players");
+                                        _logger.LogWarning(playerJson.ToString());
+                                        var players = playerJson.Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
+                                        await _hubContext.Clients.Group(gameId.ToString()).JoinGameResponse(gameId, players);
+                                    break;
+
                                     case "GameStart":
-                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(GameService.GetGame(gameId));
+                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId);
                                         break;
-                                        // TODO: more event type handling
+                                    // TODO: more event type handling
+                                        
+                                    #endregion
                                     default:
                                         _logger.LogWarning($"Unknown event type: {eventType}");
                                         break;
