@@ -54,10 +54,7 @@ namespace MonopolyServer.Services
                             string eventType = eventData.GetProperty("EventType").GetString();
                             Guid gameId = eventData.GetProperty("GameId").GetGuid();
 
-                            // Process the message on the thread pool to avoid blocking the consumer
-                            await Task.Run(async () =>
-                            {
-                                try
+                            try
                                 {
                                     switch (eventType)
                                     {
@@ -87,7 +84,6 @@ namespace MonopolyServer.Services
                                 {
                                     _logger.LogError(ex, "Error processing Kafka message.");
                                 }
-                            });
                         
                     }
                     catch (OperationCanceledException)
@@ -105,7 +101,6 @@ namespace MonopolyServer.Services
             }, stoppingToken);
 
             _logger.LogInformation("Kafka SignalR Notifier Service stopping.");
-            _kafkaConsumer.Close();
         }
 
         public override void Dispose()

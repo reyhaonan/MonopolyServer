@@ -88,7 +88,8 @@ public class GameState
     public void StartGame()
     {
         _currentPlayerIndex = _random.Next(0, ActivePlayers.Count);
-        ChangeGamePhase(GamePhase.PlayerTurnStart);
+        if (CurrentPhase == GamePhase.WaitingForPlayers) ChangeGamePhase(GamePhase.PlayerTurnStart);
+        else throw new Exception($"Game {GameId} already started");
     }
 
     public (int roll1, int roll2, int totalRoll, bool wasJailed, Player? player) RollDice()
