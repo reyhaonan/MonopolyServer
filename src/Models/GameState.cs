@@ -88,6 +88,7 @@ public class GameState
     public void StartGame()
     {
         _currentPlayerIndex = _random.Next(0, ActivePlayers.Count);
+        CurrentPlayerId = GetCurrentPlayer().Id;
         if (CurrentPhase == GamePhase.WaitingForPlayers) ChangeGamePhase(GamePhase.PlayerTurnStart);
         else throw new Exception($"Game {GameId} already started");
     }

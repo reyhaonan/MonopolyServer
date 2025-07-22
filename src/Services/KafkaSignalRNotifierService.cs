@@ -50,40 +50,40 @@ namespace MonopolyServer.Services
 
                         _logger.LogInformation($"Consumed message from topic {consumeResult.Topic} at offset {consumeResult.Offset}: {consumeResult.Message.Value}");
 
-                            var eventData = JsonSerializer.Deserialize<JsonElement>(consumeResult.Message.Value);
-                            string eventType = eventData.GetProperty("EventType").GetString();
-                            Guid gameId = eventData.GetProperty("GameId").GetGuid();
+                        var eventData = JsonSerializer.Deserialize<JsonElement>(consumeResult.Message.Value);
+                        string eventType = eventData.GetProperty("EventType").GetString();
+                        Guid gameId = eventData.GetProperty("GameId").GetGuid();
 
-                            try
+                        try
+                            {
+                                switch (eventType)
                                 {
-                                    switch (eventType)
-                                    {
-                                        case "DiceRolled":
-                                            Guid playerId = eventData.GetProperty("PlayerId").GetGuid();
-                                            int roll1 = eventData.GetProperty("Roll1").GetInt32();
-                                            int roll2 = eventData.GetProperty("Roll2").GetInt32();
-                                            int totalRoll = eventData.GetProperty("TotalRoll").GetInt32();
-                                            await _hubContext.Clients.Group(gameId.ToString())
-                                                            .DiceRolledResponse(playerId, roll1, roll2, totalRoll);
-                                            break;
-                                        case "PlayerJailed":
-                                            Guid jailedPlayerId = eventData.GetProperty("PlayerId").GetGuid();
-                                            await _hubContext.Clients.Group(gameId.ToString())
-                                                            .PlayerJailResponse(jailedPlayerId);
-                                            break;
-                                        case "GameStart":
-                                            await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(GameService.GetGame(gameId));
-                                            break;
-                                            // TODO: more event type handling
-                                        default:
-                                            _logger.LogWarning($"Unknown event type: {eventType}");
-                                            break;
-                                    }
+                                    case "DiceRolled":
+                                        Guid playerId = eventData.GetProperty("PlayerId").GetGuid();
+                                        int roll1 = eventData.GetProperty("Roll1").GetInt32();
+                                        int roll2 = eventData.GetProperty("Roll2").GetInt32();
+                                        int totalRoll = eventData.GetProperty("TotalRoll").GetInt32();
+                                        await _hubContext.Clients.Group(gameId.ToString())
+                                                        .DiceRolledResponse(playerId, roll1, roll2, totalRoll);
+                                        break;
+                                    case "PlayerJailed":
+                                        Guid jailedPlayerId = eventData.GetProperty("PlayerId").GetGuid();
+                                        await _hubContext.Clients.Group(gameId.ToString())
+                                                        .PlayerJailResponse(jailedPlayerId);
+                                        break;
+                                    case "GameStart":
+                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(GameService.GetGame(gameId));
+                                        break;
+                                        // TODO: more event type handling
+                                    default:
+                                        _logger.LogWarning($"Unknown event type: {eventType}");
+                                        break;
                                 }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogError(ex, "Error processing Kafka message.");
-                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error processing Kafka message.");
+                            }
                         
                     }
                     catch (OperationCanceledException)
