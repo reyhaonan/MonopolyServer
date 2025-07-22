@@ -69,7 +69,9 @@ namespace MonopolyServer.Services
                                     break;
 
                                     case "GameStart":
-                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId);
+                                        var firstPlayerIndex = eventData.GetProperty("FirstPlayerIndex").GetInt32();
+
+                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, firstPlayerIndex);
                                         break;
                                     // TODO: more event type handling
                                         

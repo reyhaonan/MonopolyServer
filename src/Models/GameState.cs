@@ -5,7 +5,7 @@ public class GameState
     private int _diceRoll1 { get; set; } = 0;
     private int _diceRoll2 { get; set; } = 0;
     // private GameConfig _gameConfig;
-    private int _currentPlayerIndex = 0;
+    public int CurrentPlayerIndex { get; private set; } = 0;
     #endregion
 
     #region Public property
@@ -47,7 +47,7 @@ public class GameState
 
     public Player GetCurrentPlayer()
     {
-        return ActivePlayers[_currentPlayerIndex];
+        return ActivePlayers[CurrentPlayerIndex];
     }
 
     public Player? GetPlayerById(Guid playerId)
@@ -87,7 +87,7 @@ public class GameState
     #region Game flow
     public void StartGame()
     {
-        _currentPlayerIndex = _random.Next(0, ActivePlayers.Count);
+        CurrentPlayerIndex = _random.Next(0, ActivePlayers.Count);
         CurrentPlayerId = GetCurrentPlayer().Id;
         if (CurrentPhase == GamePhase.WaitingForPlayers) ChangeGamePhase(GamePhase.PlayerTurnStart);
         else throw new Exception($"Game {GameId} already started");
