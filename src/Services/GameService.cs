@@ -92,10 +92,18 @@ namespace MonopolyServer.Services
         {
             GameState game = GetGame(gameGuid);
             if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
+            if(!playerGuid.Equals(game.CurrentPlayerId))throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-            (int roll1, int roll2, int totalRoll, bool wasJailed, Player? jailedPlayer) = game.RollDice();
-
-            var diceRolledEvent = new { EventType = "DiceRolled", GameId = gameGuid, PlayerId = playerGuid, Roll1 = roll1, Roll2 = roll2, TotalRoll = totalRoll };
+            (int roll1, int roll2, int totalRoll, bool wasJailed, Player? jailedPlayer, int newPlayerPosition) = game.RollDice();
+            
+            var diceRolledEvent = new {
+                EventType = "DiceRolled",
+                GameId = gameGuid,
+                PlayerId = playerGuid,
+                Roll1 = roll1,
+                Roll2 = roll2,
+                TotalRoll = totalRoll,
+                NewPosition = newPlayerPosition};
             await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
             {
                 Key = gameGuid.ToString(),

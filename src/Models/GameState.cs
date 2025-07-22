@@ -93,7 +93,7 @@ public class GameState
         else throw new Exception($"Game {GameId} already started");
     }
 
-    public (int roll1, int roll2, int totalRoll, bool wasJailed, Player? player) RollDice()
+    public (int roll1, int roll2, int totalRoll, bool wasJailed, Player? player, int newPlayerPosition) RollDice()
     {
         TotalDiceRoll = 0;
         bool wasJailed = false;
@@ -120,7 +120,7 @@ public class GameState
 
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
 
-        return (_diceRoll1, _diceRoll2, TotalDiceRoll, wasJailed, wasJailed ? currentPlayer : null);
+        return (_diceRoll1, _diceRoll2, TotalDiceRoll, wasJailed, wasJailed ? currentPlayer : null, currentPlayer.CurrentPosition);
     }
     #endregion
 

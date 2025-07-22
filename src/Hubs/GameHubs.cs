@@ -5,7 +5,7 @@ namespace MonopolyServer.GameHubs
 {
     public interface IResponse
     {
-        #region Game Control
+        #region Game Control Response
         Task CreateGameResponse(Guid newGameGuid);
         Task PlayerIdAssignmentResponse(Guid playerId, GameState game);
         Task JoinGameResponse(Guid gameGuid, List<Player> players);
@@ -13,8 +13,8 @@ namespace MonopolyServer.GameHubs
         Task GameEnded(Guid gameId);
         #endregion
 
-        #region Game Event
-        Task DiceRolledResponse(Guid playerId, int roll1, int roll2, int totalRoll);
+        #region Game Event Response
+        Task DiceRolledResponse(Guid playerId, int roll1, int roll2, int totalRoll, int newPosition);
         Task PlayerJailResponse(Guid playerId);
         #endregion
     }
@@ -29,16 +29,16 @@ namespace MonopolyServer.GameHubs
 
         public override async Task OnConnectedAsync()
         {
-        
+
             Console.WriteLine($"Client connected: {Context.ConnectionId}");
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            Console.WriteLine($"Client disconnected: {Context.ConnectionId}, Exception: {exception?.Message}");
-        
-        
+            Console.WriteLine($"Client disconnected: {Context.ConnectionId}, Exception: {exception?.ToString()}");
+
+
             await base.OnDisconnectedAsync(exception);
         }
 
@@ -50,11 +50,12 @@ namespace MonopolyServer.GameHubs
             await Clients.Caller.CreateGameResponse(gameGuid);
         }
 
+        #region Game Control
         public async Task JoinGame(Guid gameGuid, string playerName)
         {
-        
+
             await Groups.AddToGroupAsync(Context.ConnectionId, gameGuid.ToString());
-        
+
             Player newPlayer = await _gameService.AddPlayerToGame(gameGuid, playerName);
 
             GameState joinedGame = _gameService.GetGame(gameGuid);
@@ -67,11 +68,15 @@ namespace MonopolyServer.GameHubs
         {
             await _gameService.StartGame(gameGuid);
         }
+        #endregion
 
+        #region Game Event
         public async Task RollDice(Guid gameGuid, Guid playerGuid)
         {
+            Console.Write("Rolling dice...");
             await _gameService.ProcessDiceRoll(gameGuid, playerGuid);
         }
+        #endregion
 
     }
 }

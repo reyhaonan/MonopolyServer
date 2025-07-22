@@ -38,8 +38,10 @@ namespace MonopolyServer.Services
         {
             _logger.LogInformation("Kafka SignalR Notifier Service starting.");
 
-            _kafkaConsumer.Subscribe(Configuration["Kafka:GameEventsTopic"]);
-            _kafkaConsumer.Subscribe(Configuration["Kafka:GameControlTopic"]);
+            var gameEventsTopic = Configuration["Kafka:GameEventsTopic"] ?? throw new Exception("Topic invalid");
+            var gameControlTopic = Configuration["Kafka:GameControlTopic"] ?? throw new Exception("Topic invalid");
+
+            _kafkaConsumer.Subscribe(new List<string> { gameEventsTopic, gameControlTopic });
 
             _ = Task.Run(async () =>
             {
@@ -61,7 +63,7 @@ namespace MonopolyServer.Services
                             {
                                 switch (eventType)
                                 {
-                                    #region Game Control
+                                #region Game Control
                                     case "PlayerJoined":
                                         JsonElement playerJson = eventData.GetProperty("Players");
                                         var players = playerJson.Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
@@ -73,10 +75,21 @@ namespace MonopolyServer.Services
 
                                         await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, firstPlayerIndex);
                                         break;
-                                    // TODO: more event type handling
+                                // TODO: more event type handling
+
+                                #endregion
+
+                                #region Game Event
+                                    case "DiceRolled":
+                                        var roll1 = eventData.GetProperty("Roll1").GetInt32();
+                                        var roll2 = eventData.GetProperty("Roll2").GetInt32();
+                                        var totalRoll = eventData.GetProperty("TotalRoll").GetInt32();
+                                        var newPosition = eventData.GetProperty("NewPosition").GetInt32();
                                         
-                                    #endregion
-                                    default:
+                                        await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, roll1, roll2, totalRoll, newPosition);
+                                    break;
+                                #endregion
+                                default:
                                         _logger.LogWarning($"Unknown event type: {eventType}");
                                         break;
                                 }
@@ -106,6 +119,7 @@ namespace MonopolyServer.Services
 
         public override void Dispose()
         {
+            _kafkaConsumer?.Close();
             _kafkaConsumer?.Dispose();
             base.Dispose();
         }
