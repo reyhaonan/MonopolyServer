@@ -49,10 +49,12 @@ namespace MonopolyServer.Services
                     {
                         var consumeResult = _kafkaConsumer.Consume(stoppingToken);
 
-                        _logger.LogInformation($"Consumed message from topic {consumeResult.Topic} at offset {consumeResult.Offset}: {consumeResult.Message.Value}");
-
                         var eventData = JsonSerializer.Deserialize<JsonElement>(consumeResult.Message.Value);
-                        string eventType = eventData.GetProperty("EventType").GetString();
+
+                        string eventType = eventData.GetProperty("EventType").GetString() ?? throw new Exception("Invalid Event");
+
+                        _logger.LogInformation($"[{consumeResult.Topic}]: {eventType}");
+
                         Guid gameId = eventData.GetProperty("GameId").GetGuid();
 
                         try
@@ -62,7 +64,6 @@ namespace MonopolyServer.Services
                                     #region Game Control
                                     case "PlayerJoined":
                                         JsonElement playerJson = eventData.GetProperty("Players");
-                                        _logger.LogWarning(playerJson.ToString());
                                         var players = playerJson.Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
                                         await _hubContext.Clients.Group(gameId.ToString()).JoinGameResponse(gameId, players);
                                     break;
