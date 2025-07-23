@@ -98,7 +98,7 @@ namespace MonopolyServer.Services
                                     _logger.LogWarning($"Unknown event type: {eventType}");
                                     break;
                             }
-                            _kafkaConsumer.Commit();
+                            _kafkaConsumer.Commit(consumeResult);
                             
                             
                         }

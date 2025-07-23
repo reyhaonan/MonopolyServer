@@ -63,7 +63,6 @@ namespace MonopolyServer.GameHubs
             GameState joinedGame = _gameService.GetGame(gameGuid);
 
             await Clients.Caller.PlayerIdAssignmentResponse(newPlayer.Id, joinedGame);
-
         }
 
         public async Task StartGame(Guid gameGuid)

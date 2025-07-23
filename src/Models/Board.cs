@@ -1,10 +1,9 @@
 public class Board
 {
-    public List<Space> Spaces { get; set; }
+    public List<Space> Spaces { get; private set; } = [];
 
     public Board()
     {
-        Spaces = new List<Space>();
         InitializeBoard();
     }
 

@@ -3,7 +3,11 @@ using MonopolyServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSignalR();
+// Configure SignalR with Newtonsoft.Json to handle polymorphic types
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 102400; // 100 KB
+});
 
 var AllowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
 builder.Services.AddSingleton<GameService>();

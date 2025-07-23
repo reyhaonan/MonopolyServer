@@ -1,5 +1,5 @@
 
-public abstract class Property : Space
+public class Property : Space
 {
     public decimal PurchasePrice { get; set; }
     public decimal MortgageValue { get; set; } // 50% of purchase price
@@ -15,5 +15,5 @@ public abstract class Property : Space
         IsMortgaged = false;
     }
 
-    public abstract decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0);
+    public virtual decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0){ return 9999; }
 }
