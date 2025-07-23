@@ -9,7 +9,7 @@ namespace MonopolyServer.GameHubs
         Task CreateGameResponse(Guid newGameGuid);
         Task PlayerIdAssignmentResponse(Guid playerId, GameState game);
         Task JoinGameResponse(Guid gameGuid, List<Player> players);
-        Task StartGameResponse(Guid gameGuid, int firstPlayerIndex);
+        Task StartGameResponse(Guid gameGuid, List<Player> newPlayerOrder);
         Task GameEnded(Guid gameId);
         #endregion
 

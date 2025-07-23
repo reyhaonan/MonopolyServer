@@ -78,9 +78,9 @@ namespace MonopolyServer.Services
         public async Task StartGame(Guid gameGuid)
         {
             GameState game = GetGame(gameGuid);
-            game.StartGame();
+            var newPlayerOrder = game.StartGame();
 
-            var gameStartEvent = new { EventType = "GameStart", GameId = gameGuid, FirstPlayerIndex = game.CurrentPlayerIndex };
+            var gameStartEvent = new { EventType = "GameStart", GameId = gameGuid, NewPlayerOrder = newPlayerOrder };
             await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameControlTopic"], new Message<string, string>
             {
                 Key = gameGuid.ToString(),

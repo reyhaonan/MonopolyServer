@@ -94,11 +94,14 @@ public class GameState
     #endregion
 
     #region Game flow
-    public void StartGame()
+    public List<Player> StartGame()
     {
-        CurrentPlayerIndex = _random.Next(0, ActivePlayers.Count);
+        CurrentPlayerIndex = 0;
+        ActivePlayers = ActivePlayers.OrderBy(_ => _random.Next()).ToList();
         if (CurrentPhase == GamePhase.WaitingForPlayers) ChangeGamePhase(GamePhase.PlayerTurnStart);
         else throw new Exception($"Game {GameId} already started");
+
+        return ActivePlayers;
     }
 
     public (int roll1, int roll2, int totalRoll, bool wasJailed, Player? player, int newPlayerPosition) RollDice()

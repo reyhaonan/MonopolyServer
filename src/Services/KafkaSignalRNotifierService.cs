@@ -65,15 +65,15 @@ namespace MonopolyServer.Services
                                 {
                                 #region Game Control
                                     case "PlayerJoined":
-                                        JsonElement playerJson = eventData.GetProperty("Players");
-                                        var players = playerJson.Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
+                                        var players = eventData.GetProperty("Players").Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
+                                        
                                         await _hubContext.Clients.Group(gameId.ToString()).JoinGameResponse(gameId, players);
                                     break;
 
                                     case "GameStart":
-                                        var firstPlayerIndex = eventData.GetProperty("FirstPlayerIndex").GetInt32();
+                                        var newPlayerOrder = eventData.GetProperty("NewPlayerOrder").Deserialize<List<Player>>() ?? throw new Exception("Invalid player list");
 
-                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, firstPlayerIndex);
+                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, newPlayerOrder);
                                         break;
                                 // TODO: more event type handling
 
