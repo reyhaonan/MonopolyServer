@@ -14,8 +14,10 @@ namespace MonopolyServer.GameHubs
         #endregion
 
         #region Game Event Response
-        Task DiceRolledResponse(Guid playerId, int roll1, int roll2, int totalRoll, int newPosition);
-        Task PlayerJailResponse(Guid playerId);
+        Task DiceRolledResponse(Guid gameId, int roll1, int roll2, int totalRoll, int newPosition);
+        Task PlayerJailResponse(Guid gameId);
+        Task EndTurnResponse(Guid gameId, int nextPlayerIndex);
+        
         #endregion
     }
 
@@ -76,6 +78,15 @@ namespace MonopolyServer.GameHubs
             Console.Write("Rolling dice...");
             await _gameService.ProcessDiceRoll(gameGuid, playerGuid);
         }
+
+        
+        public async Task EndTurn(Guid gameGuid, Guid playerGuid)
+        {
+            Console.Write("Rolling dice...");
+            await _gameService.EndTurn(gameGuid, playerGuid);
+        }
+
+
         #endregion
 
     }

@@ -88,6 +88,11 @@ namespace MonopolyServer.Services
                                         
                                         await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, roll1, roll2, totalRoll, newPosition);
                                     break;
+                                    case "EndTurn":
+                                        var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
+                                        
+                                        await _hubContext.Clients.Group(gameId.ToString()).EndTurnResponse(gameId, nextPlayerIndex);
+                                    break;
                                 #endregion
                                 default:
                                         _logger.LogWarning($"Unknown event type: {eventType}");

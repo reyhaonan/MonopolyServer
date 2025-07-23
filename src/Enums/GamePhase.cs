@@ -7,6 +7,5 @@ public enum GamePhase
     MovingToken,
     LandingOnSpaceAction,
     PostLandingActions, // Auctions, debt resolution
-    TurnEnd,
     GameOver
 }

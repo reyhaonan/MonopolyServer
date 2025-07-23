@@ -5,7 +5,7 @@ public class GameState
     private int _diceRoll1 { get; set; } = 0;
     private int _diceRoll2 { get; set; } = 0;
     // private GameConfig _gameConfig;
-    public int CurrentPlayerIndex { get; private set; } = 0;
+    public int CurrentPlayerIndex { get; private set; } = -1;
     #endregion
 
     #region Public property
@@ -15,7 +15,6 @@ public class GameState
     // List of all active players(still playing)
     public List<Player> ActivePlayers { get; private set; } = [];
     public Board Board { get; set; }
-    public Guid CurrentPlayerId { get; set; } 
     public int TotalDiceRoll { get; private set; } = 0;
 
     // public List<string> ChanceDeck { get; set; } // Simplified for now, could be objects
@@ -84,17 +83,27 @@ public class GameState
         return null;
     }
 
+    #region Turn Management
+    private int NextPlayer()
+    {
+        Console.Write($"Invoked next player {CurrentPlayerIndex}, Count: {ActivePlayers.Count}");
+        // Loop back to 0
+        CurrentPlayerIndex = (CurrentPlayerIndex + 1) % ActivePlayers.Count;
+        return CurrentPlayerIndex;
+    }
+    #endregion
+
     #region Game flow
     public void StartGame()
     {
         CurrentPlayerIndex = _random.Next(0, ActivePlayers.Count);
-        CurrentPlayerId = GetCurrentPlayer().Id;
         if (CurrentPhase == GamePhase.WaitingForPlayers) ChangeGamePhase(GamePhase.PlayerTurnStart);
         else throw new Exception($"Game {GameId} already started");
     }
 
     public (int roll1, int roll2, int totalRoll, bool wasJailed, Player? player, int newPlayerPosition) RollDice()
     {
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
         TotalDiceRoll = 0;
         bool wasJailed = false;
 
@@ -121,6 +130,15 @@ public class GameState
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
 
         return (_diceRoll1, _diceRoll2, TotalDiceRoll, wasJailed, wasJailed ? currentPlayer : null, currentPlayer.CurrentPosition);
+    }
+
+    public int EndTurn()
+    {
+        
+        // TODO: change to GamePhase.PostLandingActions
+        if (CurrentPhase != GamePhase.LandingOnSpaceAction) throw new Exception("Not the appropriate game phase for this action");
+        ChangeGamePhase(GamePhase.PlayerTurnStart);
+        return NextPlayer();
     }
     #endregion
 

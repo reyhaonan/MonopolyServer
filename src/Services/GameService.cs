@@ -92,7 +92,7 @@ namespace MonopolyServer.Services
         {
             GameState game = GetGame(gameGuid);
             if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
-            if(!playerGuid.Equals(game.CurrentPlayerId))throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+            if(!playerGuid.Equals(game.GetCurrentPlayer().Id))throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
             (int roll1, int roll2, int totalRoll, bool wasJailed, Player? jailedPlayer, int newPlayerPosition) = game.RollDice();
             
@@ -121,10 +121,32 @@ namespace MonopolyServer.Services
             }
         }
 
+        public async Task EndTurn(Guid gameGuid, Guid playerGuid)
+        {
+            GameState game = GetGame(gameGuid);
+            if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
+            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+            int nextPlayerIndex = game.EndTurn();
+
+            var endTurnEvent = new
+            {
+                EventType = "EndTurn",
+                GameId = gameGuid,
+                NextPlayerIndex = nextPlayerIndex,
+            };
+
+            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
+            {
+                Key = gameGuid.ToString(),
+                Value = JsonSerializer.Serialize(endTurnEvent)
+            });
+        }
+
         // Dispose the producer when the app shuts down
         public void Dispose()
         {
-            _kafkaProducer.Flush(TimeSpan.FromSeconds(10)); 
+            _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
             _kafkaProducer.Dispose();
         }
     }
