@@ -60,49 +60,52 @@ namespace MonopolyServer.Services
                         Guid gameId = eventData.GetProperty("GameId").GetGuid();
 
                         try
+                        {
+                            switch (eventType)
                             {
-                                switch (eventType)
-                                {
                                 #region Game Control
-                                    case "PlayerJoined":
-                                        var players = eventData.GetProperty("Players").Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
-                                        
-                                        await _hubContext.Clients.Group(gameId.ToString()).JoinGameResponse(gameId, players);
+                                case "PlayerJoined":
+                                    var players = eventData.GetProperty("Players").Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
+
+                                    await _hubContext.Clients.Group(gameId.ToString()).JoinGameResponse(gameId, players);
                                     break;
 
-                                    case "GameStart":
-                                        var newPlayerOrder = eventData.GetProperty("NewPlayerOrder").Deserialize<List<Player>>() ?? throw new Exception("Invalid player list");
+                                case "GameStart":
+                                    var newPlayerOrder = eventData.GetProperty("NewPlayerOrder").Deserialize<List<Player>>() ?? throw new Exception("Invalid player list");
 
-                                        await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, newPlayerOrder);
-                                        break;
+                                    await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, newPlayerOrder);
+                                    break;
                                 // TODO: more event type handling
 
                                 #endregion
 
                                 #region Game Event
-                                    case "DiceRolled":
-                                        var roll1 = eventData.GetProperty("Roll1").GetInt32();
-                                        var roll2 = eventData.GetProperty("Roll2").GetInt32();
-                                        var totalRoll = eventData.GetProperty("TotalRoll").GetInt32();
-                                        var newPosition = eventData.GetProperty("NewPosition").GetInt32();
-                                        
-                                        await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, roll1, roll2, totalRoll, newPosition);
+                                case "DiceRolled":
+                                    var roll1 = eventData.GetProperty("Roll1").GetInt32();
+                                    var roll2 = eventData.GetProperty("Roll2").GetInt32();
+                                    var totalRoll = eventData.GetProperty("TotalRoll").GetInt32();
+                                    var newPosition = eventData.GetProperty("NewPosition").GetInt32();
+
+                                    await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, roll1, roll2, totalRoll, newPosition);
                                     break;
-                                    case "EndTurn":
-                                        var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
-                                        
-                                        await _hubContext.Clients.Group(gameId.ToString()).EndTurnResponse(gameId, nextPlayerIndex);
+                                case "EndTurn":
+                                    var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
+
+                                    await _hubContext.Clients.Group(gameId.ToString()).EndTurnResponse(gameId, nextPlayerIndex);
                                     break;
                                 #endregion
                                 default:
-                                        _logger.LogWarning($"Unknown event type: {eventType}");
-                                        break;
-                                }
+                                    _logger.LogWarning($"Unknown event type: {eventType}");
+                                    break;
                             }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError(ex, "Error processing Kafka message.");
-                            }
+                            _kafkaConsumer.Commit();
+                            
+                            
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error processing Kafka message.");
+                        }
                         
                     }
                     catch (OperationCanceledException)
