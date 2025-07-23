@@ -5,8 +5,8 @@ public class Player
     public Guid Id { get; set; } // Unique identifier for the player
     public string Name { get; set; }
     public decimal Money { get; set; }
-    public int CurrentPosition { get; private set; } // 0-39, representing board spaces
-    public bool IsInJail { get; private set; }
+    public int CurrentPosition { get; set; } // 0-39, representing board spaces
+    public bool IsInJail { get; set; }
     public int JailTurnsRemaining { get; set; } // Max 3 turns
     public int GetOutOfJailFreeCards { get; set; } // Count of cards
     public int ConsecutiveDoubles { get; set; } // For tracking 3 doubles to jail
@@ -29,14 +29,9 @@ public class Player
 
     #region Money
     public void AddMoney(decimal amount) => Money += amount;
-    public bool DeductMoney(decimal amount)
+    public void DeductMoney(decimal amount)
     {
-        if (Money >= amount)
-        {
-            Money -= amount;
-            return true;
-        }
-        return false; // Not enough money
+        Money -= amount;
     }
     #endregion
 
@@ -58,5 +53,6 @@ public class Player
     {
         MoveTo(JAIL_POSITION);
         IsInJail = true;
+        JailTurnsRemaining = 3;
     }
 }

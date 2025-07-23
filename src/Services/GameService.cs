@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Text.Json; // For serialization to JSON
 using System.Threading.Tasks;
+using MonopolyServer.Utils;
 
 namespace MonopolyServer.Services
 {
@@ -94,31 +95,29 @@ namespace MonopolyServer.Services
             if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
             if(!playerGuid.Equals(game.GetCurrentPlayer().Id))throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-            (int roll1, int roll2, int totalRoll, bool wasJailed, Player? jailedPlayer, int newPlayerPosition) = game.RollDice();
+            var result = game.RollDice();
             
-            var diceRolledEvent = new {
+            var diceRolledEvent = new
+            {
                 EventType = "DiceRolled",
                 GameId = gameGuid,
                 PlayerId = playerGuid,
-                Roll1 = roll1,
-                Roll2 = roll2,
-                TotalRoll = totalRoll,
-                NewPosition = newPlayerPosition};
+                RollResult = result
+            };
+
             await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
             {
                 Key = gameGuid.ToString(),
                 Value = JsonSerializer.Serialize(diceRolledEvent)
             });
+        }
 
-            if (wasJailed && jailedPlayer != null)
-            {
-                var playerJailedEvent = new { EventType = "PlayerJailed", GameId = gameGuid, PlayerId = jailedPlayer.Id, TurnsInJail = 3 };
-                await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
-                {
-                    Key = gameGuid.ToString(),
-                    Value = JsonSerializer.Serialize(playerJailedEvent)
-                });
-            }
+        public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
+        {
+            GameState game = GetGame(gameGuid);
+            if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
+            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+            
         }
 
         public async Task EndTurn(Guid gameGuid, Guid playerGuid)

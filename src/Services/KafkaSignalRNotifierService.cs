@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using Confluent.Kafka;
 using MonopolyServer.GameHubs;
 using System.Text.Json;
+using MonopolyServer.Utils;
 
 namespace MonopolyServer.Services
 {
@@ -81,12 +82,9 @@ namespace MonopolyServer.Services
 
                                 #region Game Event
                                 case "DiceRolled":
-                                    var roll1 = eventData.GetProperty("Roll1").GetInt32();
-                                    var roll2 = eventData.GetProperty("Roll2").GetInt32();
-                                    var totalRoll = eventData.GetProperty("TotalRoll").GetInt32();
-                                    var newPosition = eventData.GetProperty("NewPosition").GetInt32();
-
-                                    await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, roll1, roll2, totalRoll, newPosition);
+                                    var result = eventData.GetProperty("RollResult").Deserialize<RollResult>();
+                                    var playerId = eventData.GetProperty("PlayerId").GetGuid();
+                                    await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, playerId, result);
                                     break;
                                 case "EndTurn":
                                     var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();

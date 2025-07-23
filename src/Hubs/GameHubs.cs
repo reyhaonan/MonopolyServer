@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using MonopolyServer.Services;
+using MonopolyServer.Utils;
 
 namespace MonopolyServer.GameHubs
 {
@@ -7,16 +8,16 @@ namespace MonopolyServer.GameHubs
     {
         #region Game Control Response
         Task CreateGameResponse(Guid newGameGuid);
-        Task PlayerIdAssignmentResponse(Guid playerId, GameState game);
+        Task PlayerIdAssignmentResponse(Guid playerGuid, GameState game);
         Task JoinGameResponse(Guid gameGuid, List<Player> players);
         Task StartGameResponse(Guid gameGuid, List<Player> newPlayerOrder);
-        Task GameEnded(Guid gameId);
+        Task GameEnded(Guid gameGuid);
         #endregion
 
         #region Game Event Response
-        Task DiceRolledResponse(Guid gameId, int roll1, int roll2, int totalRoll, int newPosition);
-        Task PlayerJailResponse(Guid gameId);
-        Task EndTurnResponse(Guid gameId, int nextPlayerIndex);
+        Task DiceRolledResponse(Guid gameGuid, Guid playerGuid, RollResult rollResult);
+        Task EndTurnResponse(Guid gameGuid, int nextPlayerIndex);
+        Task PlayerMoneyChangeResponse(Guid gameGuid, Guid playerGuid, decimal newMoneyValue);
         
         #endregion
     }
