@@ -143,6 +143,99 @@ public class GameState
     }
     #endregion
 
+    #region Jail Handling
+    /// <summary>
+    /// Handles a player's turn while they are in jail.
+    /// If they roll doubles, they get out of jail and can move.
+    /// Otherwise, their jail turn count is reduced, and they stay in jail.
+    /// If they've been in jail for 3 turns, they are automatically released.
+    /// </summary>
+    /// <param name="player">The player who is currently in jail</param>
+    private void HandleJailTurn(Player player)
+    {
+        if (_diceRoll1 == _diceRoll2)
+        {
+            // Player rolled doubles, they get out of jail and can move
+            player.FreeFromJail();
+            _totalDiceRoll = _diceRoll1 + _diceRoll2;
+            Console.WriteLine($"Player {player.Name} rolled doubles and got out of jail!");
+        }
+        else
+        {
+            // Player didn't roll doubles, reduce their jail turn count
+            player.ReduceJailTurnRemaining();
+
+            _totalDiceRoll = 0; // No movement while in jail
+            
+        }
+    }
+    
+    /// <summary>
+    /// Allows a player to pay $50 to get out of jail immediately.
+    /// </summary>
+    /// <param name="playerId">The ID of the player who wants to pay to get out of jail</param>
+    /// <returns>True if the payment was successful and the player is out of jail, false otherwise</returns>
+    /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have enough money</exception>
+    public bool PayToGetOutOfJail(Guid playerId)
+    {
+        Player? player = GetPlayerById(playerId);
+        
+        if (player == null)
+        {
+            throw new Exception("Player not found");
+        }
+        
+        if (!player.IsInJail)
+        {
+            throw new Exception("Player is not in jail");
+        }
+        
+        const decimal JAIL_FEE = 50;
+        
+        if (player.Money < JAIL_FEE)
+        {
+            throw new Exception("Not enough money to pay the jail fee");
+        }
+        
+        player.DeductMoney(JAIL_FEE);
+        player.FreeFromJail();
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// Allows a player to use a "Get Out of Jail Free" card if they have one.
+    /// </summary>
+    /// <param name="playerId">The ID of the player who wants to use a Get Out of Jail Free card</param>
+    /// <returns>True if the card was used successfully and the player is out of jail, false otherwise</returns>
+    /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have a Get Out of Jail Free card</exception>
+    public bool UseGetOutOfJailFreeCard(Guid playerId)
+    {
+        Player? player = GetPlayerById(playerId);
+        
+        if (player == null)
+        {
+            throw new Exception("Player not found");
+        }
+        
+        if (!player.IsInJail)
+        {
+            throw new Exception("Player is not in jail");
+        }
+        
+        if (player.GetOutOfJailFreeCards <= 0)
+        {
+            throw new Exception("Player doesn't have any Get Out of Jail Free cards");
+        }
+        
+        // Use the player's Get Out of Jail Free card
+        player.UseGetOutOfJailFreeCard();
+        player.FreeFromJail();
+        
+        return true;
+    }
+    #endregion
+
     #region Game flow
     /// <summary>
     /// Starts the game by setting the first player, randomizing player order,
@@ -173,37 +266,54 @@ public class GameState
         if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
 
         _totalDiceRoll = 0;
-
-        bool wasJailed = false;
-
-        ChangeGamePhase(GamePhase.RollingDice);
-
         _diceRoll1 = _random.Next(1, 7);
-
         _diceRoll2 = _random.Next(1, 7);
 
         Player currentPlayer = GetCurrentPlayer();
 
+        // Handle jail status before movement
+        if (currentPlayer.IsInJail)
+        {
+            HandleJailTurn(currentPlayer);
+        }
+        else
+        {
+            _totalDiceRoll = _diceRoll1 + _diceRoll2;
+        }
+
+        // Handle rolling doubles
         if (_diceRoll1 == _diceRoll2)
         {
+            currentPlayer.AddConsecutiveDouble();
             if (currentPlayer.ConsecutiveDoubles >= 3)
             {
-                wasJailed = true;
+                currentPlayer.GoToJail();
             }
-            currentPlayer.ConsecutiveDoubles++;
         }
-        else currentPlayer.ConsecutiveDoubles = 0;
-        _totalDiceRoll = _diceRoll1 + _diceRoll2;
+        else
+        {
+            currentPlayer.ResetConsecutiveDouble();
+        }
 
-        ChangeGamePhase(GamePhase.MovingToken);
-
-        currentPlayer.MoveBy(_totalDiceRoll);
-
+        
+        // Only move if the player is not in jail or just got out of jail
+        if (!currentPlayer.IsInJail)
+        {
+            currentPlayer.MoveBy(_totalDiceRoll);
+            Console.WriteLine($"Player moved to position {currentPlayer.CurrentPosition}");
+        }
+        
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
+        
+        // Handle landing on spaces
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition);
         if (space is SpecialSpace specialSpace)
         {
-            if (specialSpace.Type.Equals(PropertyType.GoToJail)) wasJailed = true;
+            if (specialSpace.Type.Equals(PropertyType.GoToJail))
+            {
+                
+                currentPlayer.GoToJail();
+            }
             // TODO: other special space action
         }
         else if (space is Property property)
@@ -212,18 +322,13 @@ public class GameState
             if (property.IsOwnedByOtherPlayer(currentPlayer.Id))
             {
                 var rentValue = property.CalculateRent();
-
                 Console.WriteLine($"Deducting player money from rent {rentValue}");
-
                 currentPlayer.DeductMoney(rentValue);
             }
         }
 
-        if (wasJailed) currentPlayer.GoToJail();
-
         var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
-
-        var playerStateInfo = new RollResult.PlayerStateInfo(wasJailed, currentPlayer.CurrentPosition, currentPlayer.Money);
+        var playerStateInfo = new RollResult.PlayerStateInfo(currentPlayer.IsInJail, currentPlayer.CurrentPosition, currentPlayer.JailTurnsRemaining, currentPlayer.Money);
         
         return new RollResult(diceInfo, playerStateInfo);
     }
@@ -275,10 +380,8 @@ public class GameState
         {
             throw new Exception("This space is not a property that can be purchased");
         }
-
-
-
     }
+    
     /// <summary>
     /// Ends the current player's turn and advances to the next player.
     /// Changes the game phase from PostLandingActions or LandingOnSpaceAction to PlayerTurnStart.
@@ -287,14 +390,16 @@ public class GameState
     /// <exception cref="Exception">Thrown if not in the PostLandingActions or LandingOnSpaceAction phase</exception>
     public int EndTurn()
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) 
+            throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
 
         ChangeGamePhase(GamePhase.PlayerTurnStart);
 
-        if (GetCurrentPlayer().ConsecutiveDoubles > 0) return CurrentPlayerIndex;
+        // If the player rolled doubles and isn't in jail, they get another turn
+        if (GetCurrentPlayer().ConsecutiveDoubles > 0 && !GetCurrentPlayer().IsInJail) 
+            return CurrentPlayerIndex;
+            
         return NextPlayer();
-
     }
     #endregion
-
 }

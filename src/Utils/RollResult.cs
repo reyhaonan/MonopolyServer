@@ -23,16 +23,18 @@ public struct RollResult
     // Inner struct for player state after the roll
     public struct PlayerStateInfo
     {
-        public bool WasJailed { get; }
+        public bool isInJail { get; }
         public int NewPlayerPosition { get; }
+        public int NewPlayerJailTurnsRemaining { get; }
         public decimal NewPlayerMoney { get; }
 
         [JsonConstructor]
-        public PlayerStateInfo(bool wasJailed, int newPlayerPosition, decimal newPlayerMoney)
+        public PlayerStateInfo(bool isInJail, int newPlayerPosition, int newPlayerJailTurnsRemaining, decimal newPlayerMoney)
         {
-            WasJailed = wasJailed;
+            this.isInJail = isInJail;
             NewPlayerPosition = newPlayerPosition;
             NewPlayerMoney = newPlayerMoney;
+            NewPlayerJailTurnsRemaining = newPlayerJailTurnsRemaining;
         }
     }
 

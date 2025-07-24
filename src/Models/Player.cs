@@ -18,7 +18,8 @@ public class Player
     public int JailTurnsRemaining { get; private set; } // Max 3 turns
     [JsonInclude]
     public int GetOutOfJailFreeCards { get; private set; } // Count of cards
-    public int ConsecutiveDoubles { get; set; } // For tracking 3 doubles to jail
+    [JsonInclude]
+    public int ConsecutiveDoubles { get; private set; } // For tracking 3 doubles to jail
     [JsonInclude]
     public List<Guid> PropertiesOwned { get; private set; } // List of Property IDs owned by this player
     [JsonInclude]
@@ -50,7 +51,7 @@ public class Player
     public void MoveBy(int amount)
     {
         int newPotentialPosition = CurrentPosition + amount;
-        CurrentPosition =  newPotentialPosition % MAX_POSITION;
+        CurrentPosition = newPotentialPosition % MAX_POSITION;
     }
 
     // Use this cautiously
@@ -63,7 +64,48 @@ public class Player
     public void GoToJail()
     {
         MoveTo(JAIL_POSITION);
+        ResetConsecutiveDouble();
         IsInJail = true;
         JailTurnsRemaining = 3;
+    }
+
+    public void ReduceJailTurnRemaining()
+    {
+        if (!IsInJail) throw new Exception("Player is not in jail");
+        JailTurnsRemaining--;
+        // TODO: By game config, make em pay 50 bucks
+        if (JailTurnsRemaining == 0) FreeFromJail();
+    }
+
+    public void FreeFromJail()
+    {
+        IsInJail = false;
+        JailTurnsRemaining = 0;
+    }
+
+    public bool UseGetOutOfJailFreeCard()
+    {
+        if (GetOutOfJailFreeCards <= 0)
+        {
+            throw new Exception("Player doesn't have any Get Out of Jail Free cards");
+        }
+
+        GetOutOfJailFreeCards--;
+        return true;
+    }
+
+    public void AddGetOutOfJailFreeCard()
+    {
+        GetOutOfJailFreeCards++;
+    }
+
+    public void AddConsecutiveDouble()
+    {
+        ConsecutiveDoubles++;
+    }
+
+    public void ResetConsecutiveDouble()
+    {
+        ConsecutiveDoubles = 0;
     }
 }
