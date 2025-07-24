@@ -157,6 +157,8 @@ public class GameState
         {
             // Player rolled doubles, they get out of jail and can move
             player.FreeFromJail();
+
+            // This line specifically enable the movement
             _totalDiceRoll = _diceRoll1 + _diceRoll2;
             Console.WriteLine($"Player {player.Name} rolled doubles and got out of jail!");
         }
@@ -178,6 +180,9 @@ public class GameState
     /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have enough money</exception>
     public bool PayToGetOutOfJail(Guid playerId)
     {
+        
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
+
         Player? player = GetPlayerById(playerId);
         
         if (player == null)
@@ -211,6 +216,8 @@ public class GameState
     /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have a Get Out of Jail Free card</exception>
     public bool UseGetOutOfJailFreeCard(Guid playerId)
     {
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
+        
         Player? player = GetPlayerById(playerId);
         
         if (player == null)
@@ -265,21 +272,23 @@ public class GameState
     {
         if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
 
+        ChangeGamePhase(GamePhase.RollingDice);
+
+        // Gotta reset lil bro
         _totalDiceRoll = 0;
+
+        // Gamba, might wanna look for better randomness?
         _diceRoll1 = _random.Next(1, 7);
         _diceRoll2 = _random.Next(1, 7);
+        // _diceRoll1 = 3;
+        // _diceRoll2 = 3;
 
         Player currentPlayer = GetCurrentPlayer();
 
         // Handle jail status before movement
-        if (currentPlayer.IsInJail)
-        {
-            HandleJailTurn(currentPlayer);
-        }
-        else
-        {
-            _totalDiceRoll = _diceRoll1 + _diceRoll2;
-        }
+        if (currentPlayer.IsInJail)HandleJailTurn(currentPlayer);
+        else _totalDiceRoll = _diceRoll1 + _diceRoll2;
+        
 
         // Handle rolling doubles
         if (_diceRoll1 == _diceRoll2)
@@ -290,41 +299,44 @@ public class GameState
                 currentPlayer.GoToJail();
             }
         }
-        else
-        {
-            currentPlayer.ResetConsecutiveDouble();
-        }
+        else currentPlayer.ResetConsecutiveDouble();
 
         
         // Only move if the player is not in jail or just got out of jail
         if (!currentPlayer.IsInJail)
         {
             currentPlayer.MoveBy(_totalDiceRoll);
+            ChangeGamePhase(GamePhase.MovingToken);
             Console.WriteLine($"Player moved to position {currentPlayer.CurrentPosition}");
         }
         
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
         
         // Handle landing on spaces
-        var space = GetSpaceAtPosition(currentPlayer.CurrentPosition);
-        if (space is SpecialSpace specialSpace)
+        var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new Exception("Invalid space");
+
+        if (space is SpecialSpace { Type: PropertyType.GoToJail })
         {
-            if (specialSpace.Type.Equals(PropertyType.GoToJail))
-            {
-                
-                currentPlayer.GoToJail();
-            }
+            currentPlayer.GoToJail();
+            Console.WriteLine($"{currentPlayer.Name} landed on Go To Jail!");
+        }
+        else if (space is SpecialSpace specialSpace)
+        {
             // TODO: other special space action
+            Console.WriteLine($"{currentPlayer.Name} landed on another special space of type {specialSpace.Type}.");
         }
         else if (space is Property property)
         {
-            // TODO: mortgage logic later after game config is done
             if (property.IsOwnedByOtherPlayer(currentPlayer.Id))
             {
                 var rentValue = property.CalculateRent();
-                Console.WriteLine($"Deducting player money from rent {rentValue}");
+                Console.WriteLine($"Deducting {currentPlayer.Name}'s money from rent: {rentValue}");
                 currentPlayer.DeductMoney(rentValue);
             }
+        }
+        else
+        {
+            Console.WriteLine($"{currentPlayer.Name} landed on an unknown space type.");
         }
 
         var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
