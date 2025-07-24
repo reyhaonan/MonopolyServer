@@ -1,17 +1,28 @@
+using System.Text.Json.Serialization;
+
 public class Player
 {
     const int MAX_POSITION = 40;
     const int JAIL_POSITION = 10;
-    public Guid Id { get; set; } // Unique identifier for the player
-    public string Name { get; set; }
-    public decimal Money { get; set; }
-    public int CurrentPosition { get; set; } // 0-39, representing board spaces
-    public bool IsInJail { get; set; }
-    public int JailTurnsRemaining { get; set; } // Max 3 turns
-    public int GetOutOfJailFreeCards { get; set; } // Count of cards
+    [JsonInclude]
+    public Guid Id { get; init; } // Unique identifier for the player
+    [JsonInclude]
+    public string Name { get; private set; }
+    [JsonInclude]
+    public decimal Money { get; private set; }
+    [JsonInclude]
+    public int CurrentPosition { get; private set; } // 0-39, representing board spaces
+    [JsonInclude]
+    public bool IsInJail { get; private set; }
+    [JsonInclude]
+    public int JailTurnsRemaining { get; private set; } // Max 3 turns
+    [JsonInclude]
+    public int GetOutOfJailFreeCards { get; private set; } // Count of cards
     public int ConsecutiveDoubles { get; set; } // For tracking 3 doubles to jail
-    public List<Guid> PropertiesOwned { get; set; } // List of Property IDs owned by this player
-    public bool IsBankrupt { get; set; }
+    [JsonInclude]
+    public List<Guid> PropertiesOwned { get; private set; } // List of Property IDs owned by this player
+    [JsonInclude]
+    public bool IsBankrupt { get; private set; }
 
     public Player(string name)
     {

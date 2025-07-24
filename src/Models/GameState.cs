@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MonopolyServer.Utils;
 
 public class GameState
@@ -6,22 +7,26 @@ public class GameState
     private static readonly Random _random = new Random();
     private int _diceRoll1 { get; set; } = 0;
     private int _diceRoll2 { get; set; } = 0;
+    public int _totalDiceRoll { get; set; } = 0;
     // private GameConfig _gameConfig;
     public int CurrentPlayerIndex { get; private set; } = -1;
     #endregion
 
     #region Public property
-    public Guid GameId { get; set; }
+    [JsonInclude]
+    public Guid GameId { get; init; }
     // List of all players
+    [JsonInclude]
     public List<Player> Players { get; private set; } = [];
     // List of all active players(still playing)
+    [JsonInclude]
     public List<Player> ActivePlayers { get; private set; } = [];
+    [JsonInclude]
     public Board Board { get; set; }
-    public int TotalDiceRoll { get; private set; } = 0;
 
     // public List<string> ChanceDeck { get; set; } // Simplified for now, could be objects
     // public List<string> CommunityChestDeck { get; set; } // Simplified for now, could be objects
-
+    [JsonInclude]
     public GamePhase CurrentPhase { get; private set; }
     #endregion
 
@@ -167,7 +172,7 @@ public class GameState
     {
         if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
 
-        TotalDiceRoll = 0;
+        _totalDiceRoll = 0;
 
         bool wasJailed = false;
 
@@ -187,11 +192,11 @@ public class GameState
             }
             currentPlayer.ConsecutiveDoubles++;
         }
-        TotalDiceRoll = _diceRoll1 + _diceRoll2;
+        _totalDiceRoll = _diceRoll1 + _diceRoll2;
 
         ChangeGamePhase(GamePhase.MovingToken);
 
-        currentPlayer.MoveBy(TotalDiceRoll);
+        currentPlayer.MoveBy(_totalDiceRoll);
 
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition);
@@ -215,7 +220,7 @@ public class GameState
 
         if (wasJailed) currentPlayer.GoToJail();
 
-        var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, TotalDiceRoll);
+        var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
 
         var playerStateInfo = new RollResult.PlayerStateInfo(wasJailed, currentPlayer.CurrentPosition, currentPlayer.Money);
         
