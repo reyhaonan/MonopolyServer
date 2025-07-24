@@ -10,6 +10,9 @@ builder.Services.AddSignalR(options =>
 });
 
 var AllowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+
+// Register event publisher
+builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 builder.Services.AddSingleton<GameService>();
 
 builder.Services.AddHostedService<KafkaSignalRNotifierService>();

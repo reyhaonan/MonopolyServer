@@ -1,34 +1,15 @@
-// MonopolyServer/Services/GameService.cs
-using Microsoft.AspNetCore.SignalR;
-using MonopolyServer.GameHubs;
-using Confluent.Kafka; // Kafka Producer
-using System;
 using System.Collections.Concurrent;
-using System.Text.Json; // For serialization to JSON
-using System.Threading.Tasks;
-using MonopolyServer.Utils;
 
 namespace MonopolyServer.Services
 {
-    public class GameService
+    public class GameService : IDisposable
     {
         private static readonly ConcurrentDictionary<Guid, GameState> _activeGames = new();
+        private readonly IEventPublisher _eventPublisher;
 
-        // Kafka Producer for game events
-        private readonly IProducer<string, string> _kafkaProducer; // Key: GameId, Value: JSON serialized event
-
-        private readonly IConfiguration Configuration;
-
-        public GameService(IConfiguration configuration)
+        public GameService(IEventPublisher eventPublisher)
         {
-            Configuration = configuration;
-
-            // --- Configure Kafka Producer ---
-            var producerConfig = new ProducerConfig
-            {
-                BootstrapServers = Configuration["Kafka:BootstrapServers"],
-            };
-            _kafkaProducer = new ProducerBuilder<string, string>(producerConfig).Build();
+            _eventPublisher = eventPublisher;
         }
 
         public GameState GetGame(Guid gameGuid)
@@ -47,12 +28,7 @@ namespace MonopolyServer.Services
             Guid gameGuid = newGame.GameId;
             _activeGames.TryAdd(gameGuid, newGame);
 
-            var gameCreatedEvent = new { EventType = "GameCreated", Game = newGame };
-            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameControlTopic"], new Message<string, string>
-            {
-                Key = gameGuid.ToString(),
-                Value = JsonSerializer.Serialize(gameCreatedEvent)
-            });
+            await _eventPublisher.PublishGameControlEvent("GameCreated", gameGuid, new { Game = newGame });
 
             return (gameGuid, newGame);
         }
@@ -66,12 +42,7 @@ namespace MonopolyServer.Services
             Player newPlayer = new Player(playerName);
             game.AddPlayer(newPlayer);
 
-            var playerJoinedEvent = new { EventType = "PlayerJoined", GameId = gameGuid, Players = game.ActivePlayers };
-            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameControlTopic"], new Message<string, string>
-            {
-                Key = gameGuid.ToString(),
-                Value = JsonSerializer.Serialize(playerJoinedEvent)
-            });
+            await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameGuid, new { Players = game.ActivePlayers });
 
             return newPlayer;
         }
@@ -81,12 +52,7 @@ namespace MonopolyServer.Services
             GameState game = GetGame(gameGuid);
             var newPlayerOrder = game.StartGame();
 
-            var gameStartEvent = new { EventType = "GameStart", GameId = gameGuid, NewPlayerOrder = newPlayerOrder };
-            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameControlTopic"], new Message<string, string>
-            {
-                Key = gameGuid.ToString(),
-                Value = JsonSerializer.Serialize(gameStartEvent)
-            });
+            await _eventPublisher.PublishGameControlEvent("GameStart", gameGuid, new { NewPlayerOrder = newPlayerOrder });
         }
 
         public async Task ProcessDiceRoll(Guid gameGuid, Guid playerGuid)
@@ -97,18 +63,10 @@ namespace MonopolyServer.Services
 
             var result = game.RollDice();
             
-            var diceRolledEvent = new
+            await _eventPublisher.PublishGameActionEvent("DiceRolled", gameGuid, new
             {
-                EventType = "DiceRolled",
-                GameId = gameGuid,
                 PlayerId = playerGuid,
                 RollResult = result
-            };
-
-            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
-            {
-                Key = gameGuid.ToString(),
-                Value = JsonSerializer.Serialize(diceRolledEvent)
             });
         }
 
@@ -120,19 +78,11 @@ namespace MonopolyServer.Services
 
             var (propertyGuid, playerRemainingMoney) = game.BuyProperty();
             
-            var propertyBoughtEvent = new
+            await _eventPublisher.PublishGameActionEvent("PropertyBought", gameGuid, new
             {
-                EventType = "PropertyBought",
-                GameId = gameGuid,
                 PlayerId = playerGuid,
                 PropertyGuid = propertyGuid,
                 PlayerRemainingMoney = playerRemainingMoney
-            };
-
-            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
-            {
-                Key = gameGuid.ToString(),
-                Value = JsonSerializer.Serialize(propertyBoughtEvent)
             });
         }
 
@@ -144,25 +94,17 @@ namespace MonopolyServer.Services
 
             int nextPlayerIndex = game.EndTurn();
 
-            var endTurnEvent = new
+            await _eventPublisher.PublishGameActionEvent("EndTurn", gameGuid, new
             {
-                EventType = "EndTurn",
-                GameId = gameGuid,
-                NextPlayerIndex = nextPlayerIndex,
-            };
-
-            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
-            {
-                Key = gameGuid.ToString(),
-                Value = JsonSerializer.Serialize(endTurnEvent)
+                NextPlayerIndex = nextPlayerIndex
             });
         }
 
-        // Dispose the producer when the app shuts down
+        // Dispose method for cleanup
         public void Dispose()
         {
-            _kafkaProducer.Flush(TimeSpan.FromSeconds(10));
-            _kafkaProducer.Dispose();
+            // If we need to dispose of any resources in the future
+            // Currently, the IEventPublisher is responsible for disposing its own resources
         }
     }
 }
