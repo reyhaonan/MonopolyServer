@@ -8,5 +8,4 @@ public enum ColorGroup
     Yellow,
     Green,
     DarkBlue,
-    None // Railroads, Utilities, or special spaces
 }

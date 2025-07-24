@@ -192,6 +192,7 @@ public class GameState
             }
             currentPlayer.ConsecutiveDoubles++;
         }
+        else currentPlayer.ConsecutiveDoubles = 0;
         _totalDiceRoll = _diceRoll1 + _diceRoll2;
 
         ChangeGamePhase(GamePhase.MovingToken);
@@ -239,7 +240,7 @@ public class GameState
     /// </exception>
     public (Guid propertyGuid, decimal playerRemainingMoney) BuyProperty()
     {
-        if (!CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) throw new Exception($"{CurrentPhase.ToString()} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Player currentPlayer = GetCurrentPlayer();
 
@@ -286,10 +287,11 @@ public class GameState
     /// <exception cref="Exception">Thrown if not in the PostLandingActions or LandingOnSpaceAction phase</exception>
     public int EndTurn()
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) throw new Exception($"{CurrentPhase.ToString()} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
 
         ChangeGamePhase(GamePhase.PlayerTurnStart);
 
+        if (GetCurrentPlayer().ConsecutiveDoubles > 0) return CurrentPlayerIndex;
         return NextPlayer();
 
     }
