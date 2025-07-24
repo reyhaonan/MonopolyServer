@@ -22,7 +22,7 @@ public class Property : Space
     // </summary>
     public bool IsOwnedByOtherPlayer(Guid playerGuid)
     {
-        if (OwnerId.Equals(null)) return false;
+        if (OwnerId == null) return false;
         return !OwnerId.Equals(playerGuid);
     }
 }

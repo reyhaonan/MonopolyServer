@@ -50,7 +50,7 @@ public class Player
     public void MoveBy(int amount)
     {
         int newPotentialPosition = CurrentPosition + amount;
-        CurrentPosition = CurrentPosition = newPotentialPosition % MAX_POSITION;
+        CurrentPosition =  newPotentialPosition % MAX_POSITION;
     }
 
     // Use this cautiously
