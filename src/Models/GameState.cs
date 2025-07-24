@@ -3,6 +3,7 @@ using MonopolyServer.Utils;
 
 public class GameState
 {
+    const decimal SALARY_AMOUNT = 200;
     #region Private property
     private static readonly Random _random = new Random();
     private int _diceRoll1 { get; set; } = 0;
@@ -311,6 +312,12 @@ public class GameState
         }
         
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
+        
+        // Salary
+        if (currentPlayer.CurrentPosition <= _totalDiceRoll)
+        {
+            currentPlayer.AddMoney(SALARY_AMOUNT);
+        }
         
         // Handle landing on spaces
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new Exception("Invalid space");
