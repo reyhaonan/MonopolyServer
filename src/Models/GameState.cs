@@ -237,7 +237,7 @@ public class GameState
     /// Thrown if not in the LandingOnSpaceAction phase, if the space is not a property,
     /// if the property is already owned, or if the player doesn't have enough money.
     /// </exception>
-    public void BuyProperty()
+    public (Guid propertyGuid, decimal playerRemainingMoney) BuyProperty()
     {
         if (!CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) throw new Exception($"{CurrentPhase.ToString()} is not the appropriate game phase for this action");
 
@@ -258,6 +258,7 @@ public class GameState
                     currentPlayer.PropertiesOwned.Add(property.Id);
 
                     ChangeGamePhase(GamePhase.PostLandingActions);
+                    return (property.Id, currentPlayer.Money);
                 }
                 else
                 {
@@ -273,6 +274,7 @@ public class GameState
         {
             throw new Exception("This space is not a property that can be purchased");
         }
+
 
 
     }

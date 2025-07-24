@@ -117,7 +117,23 @@ namespace MonopolyServer.Services
             GameState game = GetGame(gameGuid);
             if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
             if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+            var (propertyGuid, playerRemainingMoney) = game.BuyProperty();
             
+            var propertyBoughtEvent = new
+            {
+                EventType = "PropertyBought",
+                GameId = gameGuid,
+                PlayerId = playerGuid,
+                PropertyGuid = propertyGuid,
+                PlayerRemainingMoney = playerRemainingMoney
+            };
+
+            await _kafkaProducer.ProduceAsync(Configuration["Kafka:GameEventsTopic"], new Message<string, string>
+            {
+                Key = gameGuid.ToString(),
+                Value = JsonSerializer.Serialize(propertyBoughtEvent)
+            });
         }
 
         public async Task EndTurn(Guid gameGuid, Guid playerGuid)

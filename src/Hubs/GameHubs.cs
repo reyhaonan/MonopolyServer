@@ -18,7 +18,7 @@ namespace MonopolyServer.GameHubs
         Task DiceRolledResponse(Guid gameGuid, Guid playerGuid, RollResult rollResult);
         Task EndTurnResponse(Guid gameGuid, int nextPlayerIndex);
         Task PlayerMoneyChangeResponse(Guid gameGuid, Guid playerGuid, decimal newMoneyValue);
-        
+        Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
         #endregion
     }
 
@@ -72,6 +72,7 @@ namespace MonopolyServer.GameHubs
         }
         #endregion
 
+        // Probably have to rewrite playerGuid param to be auth
         #region Game Event
         public async Task RollDice(Guid gameGuid, Guid playerGuid)
         {
@@ -79,10 +80,16 @@ namespace MonopolyServer.GameHubs
             await _gameService.ProcessDiceRoll(gameGuid, playerGuid);
         }
 
+        public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
+        {
+            Console.Write("Buying property...");
+            await _gameService.BuyProperty(gameGuid, playerGuid);
+        }
+
         
         public async Task EndTurn(Guid gameGuid, Guid playerGuid)
         {
-            Console.Write("Rolling dice...");
+            Console.Write("Ending turn...");
             await _gameService.EndTurn(gameGuid, playerGuid);
         }
 

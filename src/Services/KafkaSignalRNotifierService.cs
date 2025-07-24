@@ -86,6 +86,12 @@ namespace MonopolyServer.Services
                                     var playerId = eventData.GetProperty("PlayerId").GetGuid();
                                     await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, playerId, result);
                                     break;
+                                case "PropertyBought":
+                                    var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
+                                    var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                    var buyerId = eventData.GetProperty("PlayerId").GetGuid();
+                                    await _hubContext.Clients.Group(gameId.ToString()).PropertyBoughtResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                                    break;
                                 case "EndTurn":
                                     var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
 
