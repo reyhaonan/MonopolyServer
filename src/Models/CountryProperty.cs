@@ -1,10 +1,16 @@
+using System.Text.Json.Serialization;
+using Confluent.Kafka;
+
 public class CountryProperty : Property
 {
-    public ColorGroup Group { get; set; }
-    public decimal[] RentScheme { get; set; } // [Unimproved, 1H, 2H, 3H, 4H, Hotel]
-    public decimal HouseCost { get; set; }
-    public int NumHouses { get; set; } // 0-4
-    public bool HasHotel { get; set; } // True if 1 hotel (replaces 4 houses)
+    [JsonInclude]
+    public ColorGroup Group { get; init; }
+    [JsonInclude]
+    public decimal[] RentScheme { get; init; } // [Unimproved, 1H, 2H, 3H, 4H, Hotel]
+    [JsonInclude]
+    public decimal HouseCost { get; init; }
+    [JsonInclude]
+    public RentStage CurrentRentStage { get; private set; } // 0-4
 
     public CountryProperty(string name, int boardPosition, decimal price, ColorGroup group, decimal[] rentScheme, decimal houseCost)
         : base(name, boardPosition, price)
@@ -12,17 +18,38 @@ public class CountryProperty : Property
         Group = group;
         RentScheme = rentScheme;
         HouseCost = houseCost;
-        NumHouses = 0;
-        HasHotel = false;
+        CurrentRentStage = RentStage.Unimproved;
     }
 
     public override decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
     {
         if (IsMortgaged) return 0;
 
-        // Rent scheme is [Unimproved, 1H, 2H, 3H, 4H, Hotel]
-        // Index 0 for unimproved, 1-4 for houses, 5 for hotel
-        if (HasHotel) return RentScheme[5];
-        return RentScheme[NumHouses];
+        return RentScheme[(int)CurrentRentStage];
+    }
+
+    public void UpgradeRentStage()
+    {
+        if (OwnerId == null || CurrentRentStage == RentStage.Hotel) throw new Exception("Cannot upgrade more in this property");
+        CurrentRentStage++;
+    }
+
+    public void DownGradeRentStage()
+    {
+        if (OwnerId == null || CurrentRentStage == RentStage.Unimproved) throw new Exception("Cannot downgrade more in this property");
+        CurrentRentStage--;
+
+    }
+
+    public override void MortgageProperty()
+    {
+        if (CurrentRentStage != RentStage.Unimproved) throw new Exception("Can't mortgage property with house");
+        base.MortgageProperty();
+    }
+
+    public override void SellProperty()
+    {
+        if (CurrentRentStage != RentStage.Unimproved) throw new Exception("Can't sell property with house");
+        base.SellProperty();
     }
 }

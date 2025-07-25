@@ -376,7 +376,7 @@ public class GameState
                 {
                     currentPlayer.DeductMoney(property.PurchasePrice);
 
-                    property.OwnerId = currentPlayer.Id;
+                    property.BuyProperty(currentPlayer.Id);
 
                     currentPlayer.PropertiesOwned.Add(property.Id);
 

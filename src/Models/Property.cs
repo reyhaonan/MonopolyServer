@@ -1,10 +1,16 @@
 
+using System.Text.Json.Serialization;
+
 public class Property : Space
 {
-    public decimal PurchasePrice { get; set; }
-    public decimal MortgageValue { get; set; } // 50% of purchase price
-    public Guid? OwnerId { get; set; }
-    public bool IsMortgaged { get; set; }
+    [JsonInclude]
+    public decimal PurchasePrice { get; init; }
+    // This is also the sell price, if property is mortgaged, then sold. Player wont get any money
+    public decimal MortgageValue { get; init; } // 50% of purchase price
+    [JsonInclude]
+    public Guid? OwnerId { get; private set; }
+    [JsonInclude]
+    public bool IsMortgaged { get; private set; }
 
     protected Property(string name, int boardPosition, decimal price)
         : base(name, boardPosition)
@@ -24,5 +30,22 @@ public class Property : Space
     {
         if (OwnerId == null) return false;
         return !OwnerId.Equals(playerGuid);
+    }
+
+    public void BuyProperty(Guid playerGuid)
+    {
+        OwnerId = playerGuid;
+    }
+
+    public virtual void MortgageProperty()
+    {
+        if (OwnerId == null) throw new Exception("Nobody own this...");
+        IsMortgaged = true;
+    }
+
+    public virtual void SellProperty()
+    {
+        if (OwnerId == null) throw new Exception("Nobody own this...");
+        IsMortgaged = false;
     }
 }
