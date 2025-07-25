@@ -66,7 +66,7 @@ public class GameState
     public void AddPlayer(Player newPlayer)
     {
         Players.Add(newPlayer);
-
+        // TODO: [GameConfig] Adjust how much money players start the game with
         ActivePlayers.Add(newPlayer);
     }
 
@@ -311,7 +311,7 @@ public class GameState
         
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
         
-        // Salary
+        // Salary🥳
         if (passedStart)
         {
             currentPlayer.AddMoney(SALARY_AMOUNT);
@@ -320,21 +320,32 @@ public class GameState
         // Handle landing on spaces
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new Exception("Invalid space");
 
+        // Landed on Go To Jail👮‍♂️
         if (space is SpecialSpace { Type: PropertyType.GoToJail })
         {
             currentPlayer.GoToJail();
             Console.WriteLine($"{currentPlayer.Name} landed on Go To Jail!");
         }
+
+        // Landed on special(ntar)
         else if (space is SpecialSpace specialSpace)
         {
             // TODO: other special space action
             Console.WriteLine($"{currentPlayer.Name} landed on another special space of type {specialSpace.Type}.");
+            // TODO: [GameConfig] If a player lands on Vacation, all collected money from taxes and bank payments will be earned
         }
+
+        // Landed on a property
         else if (space is Property property)
         {
+            // PROPERTY OWNED BY OTHER PLAYER
             if (property.IsOwnedByOtherPlayer(currentPlayer.Id))
             {
                 var rentValue = property.CalculateRent();
+
+                // TODO: [GameConfig] If a player owns a full property set, the base rent payment will be doubled
+                // TODO: [GameConfig] Rent will not be collected when landing on properties whose owners are in prison
+
                 Console.WriteLine($"Deducting {currentPlayer.Name}'s money from rent: {rentValue}");
                 currentPlayer.DeductMoney(rentValue);
             }
