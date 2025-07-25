@@ -410,10 +410,13 @@ public class GameState
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) 
             throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
 
+        Player currentPlayer = GetCurrentPlayer();
+        if (currentPlayer.Money < 0) throw new Exception("You're broke");
+
         ChangeGamePhase(GamePhase.PlayerTurnStart);
 
         // If the player rolled doubles and isn't in jail, they get another turn
-        if (GetCurrentPlayer().ConsecutiveDoubles > 0 && !GetCurrentPlayer().IsInJail) 
+        if (currentPlayer.ConsecutiveDoubles > 0 && !currentPlayer.IsInJail) 
             return CurrentPlayerIndex;
             
         return NextPlayer();
