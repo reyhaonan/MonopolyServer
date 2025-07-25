@@ -21,6 +21,12 @@ public class CountryProperty : Property
         CurrentRentStage = RentStage.Unimproved;
     }
 
+    protected override void ResetProperty()
+    {
+        CurrentRentStage = RentStage.Unimproved;
+        base.ResetProperty();
+    }
+
     public override decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
     {
         if (IsMortgaged) return 0;
