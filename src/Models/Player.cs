@@ -48,10 +48,19 @@ public class Player
     #endregion
 
     #region Movement
-    public void MoveBy(int amount)
+
+    // Return true if passing by start
+    public bool MoveBy(int amount)
     {
         int newPotentialPosition = CurrentPosition + amount;
         CurrentPosition = newPotentialPosition % MAX_POSITION;
+
+        if (CurrentPosition < 0)
+        {
+            CurrentPosition += MAX_POSITION;
+        }
+
+        return newPotentialPosition >= MAX_POSITION;
     }
 
     // Use this cautiously

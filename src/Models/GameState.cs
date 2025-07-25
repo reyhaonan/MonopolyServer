@@ -281,8 +281,6 @@ public class GameState
         // Gamba, might wanna look for better randomness?
         _diceRoll1 = _random.Next(1, 7);
         _diceRoll2 = _random.Next(1, 7);
-        // _diceRoll1 = 3;
-        // _diceRoll2 = 3;
 
         Player currentPlayer = GetCurrentPlayer();
 
@@ -302,11 +300,11 @@ public class GameState
         }
         else currentPlayer.ResetConsecutiveDouble();
 
-        
+        bool passedStart = false;
         // Only move if the player is not in jail or just got out of jail
         if (!currentPlayer.IsInJail)
         {
-            currentPlayer.MoveBy(_totalDiceRoll);
+            passedStart = currentPlayer.MoveBy(_totalDiceRoll);
             ChangeGamePhase(GamePhase.MovingToken);
             Console.WriteLine($"Player moved to position {currentPlayer.CurrentPosition}");
         }
@@ -314,7 +312,7 @@ public class GameState
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
         
         // Salary
-        if (currentPlayer.CurrentPosition <= _totalDiceRoll)
+        if (passedStart)
         {
             currentPlayer.AddMoney(SALARY_AMOUNT);
         }
