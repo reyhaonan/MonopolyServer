@@ -6,7 +6,10 @@ public class Property : Space
     [JsonInclude]
     public decimal PurchasePrice { get; init; }
     // This is also the sell price, if property is mortgaged, then sold. Player wont get any money
+    [JsonInclude]
     public decimal MortgageValue { get; init; } // 50% of purchase price
+    [JsonInclude]
+    public decimal UnmortgageCost { get; init; } // 60% of purchase price
     [JsonInclude]
     public Guid? OwnerId { get; private set; }
     [JsonInclude]
@@ -17,6 +20,7 @@ public class Property : Space
     {
         PurchasePrice = price;
         MortgageValue = price / 2;
+        UnmortgageCost = price * .6m;
         OwnerId = null;
         IsMortgaged = false;
     }
@@ -54,7 +58,7 @@ public class Property : Space
         IsMortgaged = true;
     }
 
-    public virtual void UnMortgageProperty()
+    public virtual void UnmortgageProperty()
     {
         if (OwnerId == null) throw new Exception("Nobody own this...");
         IsMortgaged = false;

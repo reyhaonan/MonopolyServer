@@ -135,6 +135,23 @@ namespace MonopolyServer.Services
             });
 
         }
+        public async Task UnmortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            GameState game = GetGame(gameGuid);
+            Player currentPlayer = game.GetCurrentPlayer();
+
+            if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+            game.MortgageProperty(propertyGuid);
+
+            await _eventPublisher.PublishGameActionEvent("PropertyMortgage", gameGuid, new
+            {
+                PlayerId = playerGuid,
+                PropertyGuid = propertyGuid,
+                PlayerRemainingMoney = currentPlayer.Money
+            });
+
+        }
 
         public async Task EndTurn(Guid gameGuid, Guid playerGuid)
         {

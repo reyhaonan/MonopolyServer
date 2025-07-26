@@ -39,26 +39,26 @@ public class CountryProperty : Property
 
     public void UpgradeRentStage()
     {
-        if (OwnerId == null || CurrentRentStage == RentStage.Hotel) throw new Exception("Cannot upgrade more in this property");
+        if (OwnerId == null || CurrentRentStage == RentStage.Hotel) throw new InvalidOperationException("Cannot upgrade more in this property");
         CurrentRentStage++;
     }
 
     public void DownGradeRentStage()
     {
-        if (OwnerId == null || CurrentRentStage == RentStage.Unimproved) throw new Exception("Cannot downgrade more in this property");
+        if (OwnerId == null || CurrentRentStage == RentStage.Unimproved) throw new InvalidOperationException("Cannot downgrade more in this property");
         CurrentRentStage--;
 
     }
 
     public override void MortgageProperty()
     {
-        if (CurrentRentStage != RentStage.Unimproved) throw new Exception("Can't mortgage property with house");
+        if (CurrentRentStage != RentStage.Unimproved) throw new InvalidOperationException("Can't mortgage property with house");
         base.MortgageProperty();
     }
 
     public override void SellProperty()
     {
-        if (CurrentRentStage != RentStage.Unimproved) throw new Exception("Can't sell property with house");
+        if (CurrentRentStage != RentStage.Unimproved) throw new InvalidOperationException("Can't sell property with house");
         base.SellProperty();
     }
 }

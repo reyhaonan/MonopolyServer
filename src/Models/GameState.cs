@@ -181,25 +181,25 @@ public class GameState
     public bool PayToGetOutOfJail(Guid playerId)
     {
 
-        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException("Not the appropriate game phase for this action");
 
         Player? player = GetPlayerById(playerId);
 
         if (player == null)
         {
-            throw new Exception("Player not found");
+            throw new InvalidOperationException("Player not found");
         }
 
         if (!player.IsInJail)
         {
-            throw new Exception("Player is not in jail");
+            throw new InvalidOperationException("Player is not in jail");
         }
 
         const decimal JAIL_FEE = 50;
 
         if (player.Money < JAIL_FEE)
         {
-            throw new Exception("Not enough money to pay the jail fee");
+            throw new InvalidOperationException("Not enough money to pay the jail fee");
         }
 
         player.DeductMoney(JAIL_FEE);
@@ -216,23 +216,23 @@ public class GameState
     /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have a Get Out of Jail Free card</exception>
     public bool UseGetOutOfJailFreeCard(Guid playerId)
     {
-        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException("Not the appropriate game phase for this action");
 
         Player? player = GetPlayerById(playerId);
 
         if (player == null)
         {
-            throw new Exception("Player not found");
+            throw new InvalidOperationException("Player not found");
         }
 
         if (!player.IsInJail)
         {
-            throw new Exception("Player is not in jail");
+            throw new InvalidOperationException("Player is not in jail");
         }
 
         if (player.GetOutOfJailFreeCards <= 0)
         {
-            throw new Exception("Player doesn't have any Get Out of Jail Free cards");
+            throw new InvalidOperationException("Player doesn't have any Get Out of Jail Free cards");
         }
 
         // Use the player's Get Out of Jail Free card
@@ -258,7 +258,7 @@ public class GameState
 
         if (CurrentPhase == GamePhase.WaitingForPlayers) ChangeGamePhase(GamePhase.PlayerTurnStart);
 
-        else throw new Exception($"Game {GameId} already started");
+        else throw new InvalidOperationException($"Game {GameId} already started");
 
         return ActivePlayers;
     }
@@ -270,7 +270,7 @@ public class GameState
     /// <exception cref="Exception">Thrown if not in the PlayerTurnStart phase</exception>
     public RollResult RollDice()
     {
-        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException("Not the appropriate game phase for this action");
 
         ChangeGamePhase(GamePhase.RollingDice);
 
@@ -317,7 +317,7 @@ public class GameState
         }
 
         // Handle landing on spaces
-        var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new Exception("Invalid space");
+        var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new InvalidOperationException("Invalid space");
 
         // Landed on Go To Jail👮‍♂️
         if (space is SpecialSpace { Type: PropertyType.GoToJail })
@@ -372,10 +372,10 @@ public class GameState
     public int EndTurn()
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions))
-            throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+            throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Player currentPlayer = GetCurrentPlayer();
-        if (currentPlayer.Money < 0) throw new Exception("You're broke");
+        if (currentPlayer.Money < 0) throw new InvalidOperationException("You're broke");
 
         ChangeGamePhase(GamePhase.PlayerTurnStart);
 
@@ -400,7 +400,7 @@ public class GameState
     /// </exception>
     public Guid BuyProperty()
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Player currentPlayer = GetCurrentPlayer();
 
@@ -422,17 +422,17 @@ public class GameState
                 }
                 else
                 {
-                    throw new Exception("Not enough money to buy this property");
+                    throw new InvalidOperationException("Not enough money to buy this property");
                 }
             }
             else
             {
-                throw new Exception("This property is already owned");
+                throw new InvalidOperationException("This property is already owned");
             }
         }
         else
         {
-            throw new Exception("This space is not a property that can be purchased");
+            throw new InvalidOperationException("This space is not a property that can be purchased");
         }
     }
 
@@ -446,15 +446,15 @@ public class GameState
             return (Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id), countryProperty);
         }
         // TODO: [GameConfig] House spread checks
-        else throw new Exception("Space is not a country");
+        else throw new InvalidOperationException("Space is not a country");
     }
     public void UpgradeProperty(Guid propertyGuid)
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
 
-        if (!playerCanUpgrade) throw new Exception("Cannot perform upgrade for this property");
+        if (!playerCanUpgrade) throw new InvalidOperationException("Cannot perform upgrade for this property");
         countryProperty.UpgradeRentStage();
 
         Player currentPlayer = GetCurrentPlayer();
@@ -463,11 +463,11 @@ public class GameState
     }
     public void DowngradeProperty(Guid propertyGuid)
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
 
-        if (!playerCanUpgrade) throw new Exception("Cannot perform downgrade for this property");
+        if (!playerCanUpgrade) throw new InvalidOperationException("Cannot perform downgrade for this property");
         countryProperty.DownGradeRentStage();
 
         Player currentPlayer = GetCurrentPlayer();
@@ -476,7 +476,7 @@ public class GameState
     }
     public void MortgageProperty(Guid propertyGuid) {
         
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Property property = Board.GetPropertyById(propertyGuid);
         Player currentPlayer = GetCurrentPlayer();
@@ -486,7 +486,21 @@ public class GameState
 
             currentPlayer.AddMoney(property.MortgageValue);
         }
-        else throw new Exception("Property is not owned by this player");
+        else throw new InvalidOperationException("Property is not owned by this player");
+    }
+    public void UnmortgageProperty(Guid propertyGuid) {
+        
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+
+        Property property = Board.GetPropertyById(propertyGuid);
+        Player currentPlayer = GetCurrentPlayer();
+        if (property.IsOwnedByPlayer(currentPlayer.Id))
+        {
+            property.UnmortgageProperty();
+
+            currentPlayer.DeductMoney(property.UnmortgageCost);
+        }
+        else throw new InvalidOperationException("Property is not owned by this player");
     }
     
    

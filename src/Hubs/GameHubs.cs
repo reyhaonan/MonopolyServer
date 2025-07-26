@@ -17,8 +17,11 @@ namespace MonopolyServer.GameHubs
         #region Game Event Response
         Task DiceRolledResponse(Guid gameGuid, Guid playerGuid, RollResult rollResult);
         Task EndTurnResponse(Guid gameGuid, int nextPlayerIndex);
-        Task PlayerMoneyChangeResponse(Guid gameGuid, Guid playerGuid, decimal newMoneyValue);
         Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
+        Task PropertyDowngradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
+        Task PropertyUpgradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
+        Task PropertyMortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
+        Task PropertyUnmortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
         #endregion
     }
 
@@ -86,9 +89,21 @@ namespace MonopolyServer.GameHubs
             await _gameService.BuyProperty(gameGuid, playerGuid);
         }
 
-        public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid spaceGuid)
+        public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
         {
-            await _gameService.UpgradeProperty(gameGuid, playerGuid, spaceGuid);
+            await _gameService.UpgradeProperty(gameGuid, playerGuid, propertyGuid);
+        }
+        public async Task DowngradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            await _gameService.DowngradeProperty(gameGuid, playerGuid, propertyGuid);
+        }
+        public async Task MortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            await _gameService.MortgageProperty(gameGuid, playerGuid, propertyGuid);
+        }
+        public async Task UnmortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            await _gameService.UnmortgageProperty(gameGuid, playerGuid, propertyGuid);
         }
 
         

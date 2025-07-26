@@ -35,7 +35,9 @@ namespace MonopolyServer.Services
             _kafkaConsumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
         }
 
+        #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             _logger.LogInformation("Kafka SignalR Notifier Service starting.");
 
@@ -62,45 +64,73 @@ namespace MonopolyServer.Services
 
                         try
                         {
-                            switch (eventType)
+                            #region Game Control
+                            if (eventType == "PlayerJoined")
                             {
-                                #region Game Control
-                                case "PlayerJoined":
-                                    var players = eventData.GetProperty("Players").Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
+                                var players = eventData.GetProperty("Players").Deserialize<List<Player>>() ?? throw new Exception("Player argument invalid");
+                                await _hubContext.Clients.Group(gameId.ToString()).JoinGameResponse(gameId, players);
+                            }
+                            else if (eventType == "GameStart")
+                            {
+                                var newPlayerOrder = eventData.GetProperty("NewPlayerOrder").Deserialize<List<Player>>() ?? throw new Exception("Invalid player list");
+                                await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, newPlayerOrder);
+                            }
+                            #endregion
 
-                                    await _hubContext.Clients.Group(gameId.ToString()).JoinGameResponse(gameId, players);
-                                    break;
-
-                                case "GameStart":
-                                    var newPlayerOrder = eventData.GetProperty("NewPlayerOrder").Deserialize<List<Player>>() ?? throw new Exception("Invalid player list");
-
-                                    await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, newPlayerOrder);
-                                    break;
-                                // TODO: more event type handling
-
-                                #endregion
-
-                                #region Game Event
-                                case "DiceRolled":
-                                    var result = eventData.GetProperty("RollResult").Deserialize<RollResult>();
-                                    var playerId = eventData.GetProperty("PlayerId").GetGuid();
-                                    await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, playerId, result);
-                                    break;
-                                case "PropertyBought":
-                                    var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
-                                    var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
-                                    var buyerId = eventData.GetProperty("PlayerId").GetGuid();
-                                    await _hubContext.Clients.Group(gameId.ToString()).PropertyBoughtResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
-                                    break;
-                                case "EndTurn":
-                                    var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
-
-                                    await _hubContext.Clients.Group(gameId.ToString()).EndTurnResponse(gameId, nextPlayerIndex);
-                                    break;
-                                #endregion
-                                default:
-                                    _logger.LogWarning($"Unknown event type: {eventType}");
-                                    break;
+                            #region Game Event
+                            // TODO: more event type handling
+                            else if (eventType == "DiceRolled")
+                            {
+                                var result = eventData.GetProperty("RollResult").Deserialize<RollResult>();
+                                var playerId = eventData.GetProperty("PlayerId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, playerId, result);
+                            }
+                            else if (eventType == "EndTurn")
+                            {
+                                var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
+                                await _hubContext.Clients.Group(gameId.ToString()).EndTurnResponse(gameId, nextPlayerIndex);
+                            }
+                            #region Property event
+                            else if (eventType == "PropertyBought")
+                            {
+                                var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
+                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var buyerId = eventData.GetProperty("PlayerId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyBoughtResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                            }
+                            else if (eventType == "PropertyUpgrade")
+                            {
+                                var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
+                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var buyerId = eventData.GetProperty("PlayerId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyUpgradeResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                            }
+                            else if (eventType == "PropertyDowngrade")
+                            {
+                                var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
+                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var buyerId = eventData.GetProperty("PlayerId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyDowngradeResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                            }
+                            else if (eventType == "PropertyMortgage")
+                            {
+                                var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
+                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var buyerId = eventData.GetProperty("PlayerId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyMortgagedResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                            }
+                            else if (eventType == "PropertyUnmortgage")
+                            {
+                                var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
+                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var buyerId = eventData.GetProperty("PlayerId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyUnmortgagedResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                            }
+                            #endregion
+                            #endregion
+                            else
+                            {
+                                _logger.LogWarning($"Unknown event type: {eventType}");
                             }
                             _kafkaConsumer.Commit(consumeResult);
                             
