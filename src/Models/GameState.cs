@@ -278,8 +278,10 @@ public class GameState
         _totalDiceRoll = 0;
 
         // Gamba, might wanna look for better randomness?
-        _diceRoll1 = _random.Next(1, 7);
-        _diceRoll2 = _random.Next(1, 7);
+        // _diceRoll1 = _random.Next(1, 7);
+        // _diceRoll2 = _random.Next(1, 7);
+        _diceRoll1 = 1;
+        _diceRoll2 = 0;
 
         Player currentPlayer = GetCurrentPlayer();
 

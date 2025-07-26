@@ -104,16 +104,12 @@ namespace MonopolyServer.GameHubs
         public async Task UnmortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
         {
             await _gameService.UnmortgageProperty(gameGuid, playerGuid, propertyGuid);
-        }
-
-        
+        }        
         public async Task EndTurn(Guid gameGuid, Guid playerGuid)
         {
             Console.Write("Ending turn...");
             await _gameService.EndTurn(gameGuid, playerGuid);
         }
-
-
         #endregion
 
     }

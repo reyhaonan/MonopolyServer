@@ -142,9 +142,9 @@ namespace MonopolyServer.Services
 
             if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-            game.MortgageProperty(propertyGuid);
+            game.UnmortgageProperty(propertyGuid);
 
-            await _eventPublisher.PublishGameActionEvent("PropertyMortgage", gameGuid, new
+            await _eventPublisher.PublishGameActionEvent("PropertyUnmortgage", gameGuid, new
             {
                 PlayerId = playerGuid,
                 PropertyGuid = propertyGuid,
