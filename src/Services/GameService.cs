@@ -198,7 +198,11 @@ namespace MonopolyServer.Services
                 NextPlayerIndex = nextPlayerIndex
             });
 
-            // TODO: GameControl win event
+            if (game.ActivePlayers.Count == 1)
+            {
+                // TODO: GameControl win event
+            }
+
         }
 
         // Dispose method for cleanup
