@@ -90,6 +90,12 @@ namespace MonopolyServer.Services
                                 var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
                                 await _hubContext.Clients.Group(gameId.ToString()).EndTurnResponse(gameId, nextPlayerIndex);
                             }
+                            else if (eventType == "DeclareBankcruptcy")
+                            {
+                                var removedPlayerGuid = eventData.GetProperty("RemovedPlayerGuid").GetGuid();
+                                var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
+                                await _hubContext.Clients.Group(gameId.ToString()).DeclareBankcruptcyResponse(gameId, removedPlayerGuid, nextPlayerIndex);
+                            }
                             #region Property event
                             else if (eventType == "PropertyBought")
                             {

@@ -17,6 +17,10 @@ namespace MonopolyServer.GameHubs
         #region Game Event Response
         Task DiceRolledResponse(Guid gameGuid, Guid playerGuid, RollResult rollResult);
         Task EndTurnResponse(Guid gameGuid, int nextPlayerIndex);
+        Task DeclareBankcruptcyResponse(Guid gameGuid, Guid removedPlayerGuid, int nextPlayerIndex);
+
+
+        // 
         Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
         Task PropertySoldResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
         Task PropertyDowngradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
@@ -112,6 +116,10 @@ namespace MonopolyServer.GameHubs
         {
             Console.Write("Ending turn...");
             await _gameService.EndTurn(gameGuid, playerGuid);
+        }
+        public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
+        {
+            await _gameService.DeclareBankcruptcy(gameGuid, playerGuid);
         }
         #endregion
 

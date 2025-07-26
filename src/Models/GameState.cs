@@ -349,6 +349,8 @@ public class GameState
 
                 Console.WriteLine($"Deducting {currentPlayer.Name}'s money from rent: {rentValue}");
                 currentPlayer.DeductMoney(rentValue);
+
+                // TODO: add money to the owner
             }
         }
         else
@@ -386,6 +388,25 @@ public class GameState
             return CurrentPlayerIndex;
 
         return NextPlayer();
+    }
+
+    public int DeclareBankcruptcy(Guid playerGuid)
+    {
+        Player bankcruptPlayer = ActivePlayers.Find(p => p.Id == playerGuid) ?? throw new InvalidOperationException("Player not found");
+
+        foreach (Guid propertyId in bankcruptPlayer.PropertiesOwned)
+        {
+            Board.GetPropertyById(propertyId).SellProperty();
+        }
+
+        bool isActivePlayer = GetCurrentPlayer().Id == bankcruptPlayer.Id;
+
+        
+        ActivePlayers.Remove(bankcruptPlayer);
+
+        if (isActivePlayer)ChangeGamePhase(GamePhase.PlayerTurnStart);
+        CurrentPlayerIndex %= ActivePlayers.Count;
+        return CurrentPlayerIndex;
     }
 
     #endregion

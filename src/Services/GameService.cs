@@ -57,7 +57,11 @@ namespace MonopolyServer.Services
         public async Task ProcessDiceRoll(Guid gameGuid, Guid playerGuid)
         {
             GameState game = GetGame(gameGuid);
-            if(!playerGuid.Equals(game.GetCurrentPlayer().Id))throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+            foreach (var p in game.ActivePlayers)
+            {
+                Console.WriteLine(p.Id);
+            }
+            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.  current active are: {game.GetCurrentPlayer().Id}");
 
             var result = game.RollDice();
             
@@ -179,6 +183,22 @@ namespace MonopolyServer.Services
             {
                 NextPlayerIndex = nextPlayerIndex
             });
+        }
+
+        // Huge risk, use auth later to get the playerGuid
+        public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
+        {
+            GameState game = GetGame(gameGuid);
+
+            int nextPlayerIndex = game.DeclareBankcruptcy(playerGuid);
+
+            await _eventPublisher.PublishGameActionEvent("DeclareBankcruptcy", gameGuid, new
+            {
+                RemovedPlayerGuid = playerGuid,
+                NextPlayerIndex = nextPlayerIndex
+            });
+
+            // TODO: GameControl win event
         }
 
         // Dispose method for cleanup
