@@ -98,6 +98,13 @@ namespace MonopolyServer.Services
                                 var buyerId = eventData.GetProperty("PlayerId").GetGuid();
                                 await _hubContext.Clients.Group(gameId.ToString()).PropertyBoughtResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
                             }
+                            else if (eventType == "PropertySold")
+                            {
+                                var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
+                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var buyerId = eventData.GetProperty("PlayerId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertySoldResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                            }
                             else if (eventType == "PropertyUpgrade")
                             {
                                 var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();

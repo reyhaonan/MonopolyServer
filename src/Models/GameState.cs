@@ -438,6 +438,20 @@ public class GameState
         }
     }
 
+    public void SellProperty(Guid propertyGuid)
+    {
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        Property property = Board.GetPropertyById(propertyGuid);
+        
+        Player currentPlayer = GetCurrentPlayer();
+
+        if (!property.IsOwnedByPlayer(currentPlayer.Id)) throw new InvalidOperationException($"{currentPlayer.Id} are not permitted to sell this property");
+
+        property.SellProperty();
+
+        currentPlayer.AddMoney(property.MortgageValue);
+    }
+
     private (bool result, CountryProperty countryProperty) CheckUpgradeDowngradePermission(Guid propertyGuid)
     {
         Property property = Board.GetPropertyById(propertyGuid);

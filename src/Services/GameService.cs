@@ -83,6 +83,21 @@ namespace MonopolyServer.Services
                 PlayerRemainingMoney = currentPlayer.Money
             });
         }
+        public async Task SellProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            GameState game = GetGame(gameGuid);
+            Player currentPlayer = game.GetCurrentPlayer();
+            if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+            game.SellProperty(propertyGuid);
+            
+            await _eventPublisher.PublishGameActionEvent("PropertySold", gameGuid, new
+            {
+                PlayerId = playerGuid,
+                PropertyGuid = propertyGuid,
+                PlayerRemainingMoney = currentPlayer.Money
+            });
+        }
 
         public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
         {

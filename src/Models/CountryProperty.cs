@@ -59,6 +59,7 @@ public class CountryProperty : Property
     public override void SellProperty()
     {
         if (CurrentRentStage != RentStage.Unimproved) throw new InvalidOperationException("Can't sell property with house");
+        if(IsMortgaged) throw new InvalidOperationException("Can't sell mortgaged property");
         base.SellProperty();
     }
 }

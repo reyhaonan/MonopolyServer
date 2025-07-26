@@ -18,6 +18,7 @@ namespace MonopolyServer.GameHubs
         Task DiceRolledResponse(Guid gameGuid, Guid playerGuid, RollResult rollResult);
         Task EndTurnResponse(Guid gameGuid, int nextPlayerIndex);
         Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
+        Task PropertySoldResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
         Task PropertyDowngradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
         Task PropertyUpgradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
         Task PropertyMortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
@@ -79,14 +80,16 @@ namespace MonopolyServer.GameHubs
         #region Game Event
         public async Task RollDice(Guid gameGuid, Guid playerGuid)
         {
-            Console.Write("Rolling dice...");
             await _gameService.ProcessDiceRoll(gameGuid, playerGuid);
         }
 
         public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
         {
-            Console.Write("Buying property...");
             await _gameService.BuyProperty(gameGuid, playerGuid);
+        }
+        public async Task SellProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            await _gameService.SellProperty(gameGuid, playerGuid, propertyGuid);
         }
 
         public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
