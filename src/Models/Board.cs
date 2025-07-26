@@ -51,9 +51,11 @@ public class Board
         Spaces.Add(new CountryProperty("China", 39, 400, ColorGroup.DarkBlue, [50, 200, 600, 1400, 1700, 2000], 200));
     }
 
-    public Property? GetPropertyById(Guid propertyId)
+    public Property GetPropertyById(Guid propertyId)
     {
-        return Spaces.OfType<Property>().FirstOrDefault(p => p.Id == propertyId);
+        var property = Spaces.OfType<Property>().FirstOrDefault(p => p.Id == propertyId) ?? throw new Exception("Property not found");
+
+        return property;
     }
 
     public List<CountryProperty> GetPropertiesInGroup(ColorGroup group)

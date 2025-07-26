@@ -37,7 +37,6 @@ namespace MonopolyServer.Services
         public async Task<Player> AddPlayerToGame(Guid gameGuid, string playerName)
         {
             GameState game = GetGame(gameGuid);
-            if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
 
             Player newPlayer = new Player(playerName);
             game.AddPlayer(newPlayer);
@@ -58,7 +57,6 @@ namespace MonopolyServer.Services
         public async Task ProcessDiceRoll(Guid gameGuid, Guid playerGuid)
         {
             GameState game = GetGame(gameGuid);
-            if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
             if(!playerGuid.Equals(game.GetCurrentPlayer().Id))throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
             var result = game.RollDice();
@@ -73,7 +71,6 @@ namespace MonopolyServer.Services
         public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
         {
             GameState game = GetGame(gameGuid);
-            if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
             if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
             var (propertyGuid, playerRemainingMoney) = game.BuyProperty();
@@ -86,10 +83,37 @@ namespace MonopolyServer.Services
             });
         }
 
+        public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            GameState game = GetGame(gameGuid);
+
+            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+            game.UpgradeProperty(propertyGuid);
+
+        }
+        public async Task DowngradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            GameState game = GetGame(gameGuid);
+
+            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+            game.DowngradeProperty(propertyGuid);
+
+        }
+        public async Task MortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+        {
+            GameState game = GetGame(gameGuid);
+
+            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+            game.MortgageProperty(propertyGuid);
+
+        }
+
         public async Task EndTurn(Guid gameGuid, Guid playerGuid)
         {
             GameState game = GetGame(gameGuid);
-            if (game == null) throw new InvalidOperationException($"Game {gameGuid} not found.");
             if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
             int nextPlayerIndex = game.EndTurn();

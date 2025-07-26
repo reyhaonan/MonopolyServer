@@ -38,6 +38,11 @@ public class Property : Space
         return !OwnerId.Equals(playerGuid);
     }
 
+    public bool IsOwnedByPlayer(Guid playerGuid) {
+        if (OwnerId == null) return false;
+        return OwnerId.Equals(playerGuid);
+    }
+
     public void BuyProperty(Guid playerGuid)
     {
         OwnerId = playerGuid;

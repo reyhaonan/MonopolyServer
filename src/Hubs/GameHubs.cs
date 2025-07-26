@@ -86,6 +86,11 @@ namespace MonopolyServer.GameHubs
             await _gameService.BuyProperty(gameGuid, playerGuid);
         }
 
+        public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid spaceGuid)
+        {
+            await _gameService.UpgradeProperty(gameGuid, playerGuid, spaceGuid);
+        }
+
         
         public async Task EndTurn(Guid gameGuid, Guid playerGuid)
         {

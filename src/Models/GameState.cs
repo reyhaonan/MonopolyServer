@@ -169,10 +169,10 @@ public class GameState
             player.ReduceJailTurnRemaining();
 
             _totalDiceRoll = 0; // No movement while in jail
-            
+
         }
     }
-    
+
     /// <summary>
     /// Allows a player to pay $50 to get out of jail immediately.
     /// </summary>
@@ -181,34 +181,34 @@ public class GameState
     /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have enough money</exception>
     public bool PayToGetOutOfJail(Guid playerId)
     {
-        
+
         if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
 
         Player? player = GetPlayerById(playerId);
-        
+
         if (player == null)
         {
             throw new Exception("Player not found");
         }
-        
+
         if (!player.IsInJail)
         {
             throw new Exception("Player is not in jail");
         }
-        
+
         const decimal JAIL_FEE = 50;
-        
+
         if (player.Money < JAIL_FEE)
         {
             throw new Exception("Not enough money to pay the jail fee");
         }
-        
+
         player.DeductMoney(JAIL_FEE);
         player.FreeFromJail();
-        
+
         return true;
     }
-    
+
     /// <summary>
     /// Allows a player to use a "Get Out of Jail Free" card if they have one.
     /// </summary>
@@ -218,28 +218,28 @@ public class GameState
     public bool UseGetOutOfJailFreeCard(Guid playerId)
     {
         if (CurrentPhase != GamePhase.PlayerTurnStart) throw new Exception("Not the appropriate game phase for this action");
-        
+
         Player? player = GetPlayerById(playerId);
-        
+
         if (player == null)
         {
             throw new Exception("Player not found");
         }
-        
+
         if (!player.IsInJail)
         {
             throw new Exception("Player is not in jail");
         }
-        
+
         if (player.GetOutOfJailFreeCards <= 0)
         {
             throw new Exception("Player doesn't have any Get Out of Jail Free cards");
         }
-        
+
         // Use the player's Get Out of Jail Free card
         player.UseGetOutOfJailFreeCard();
         player.FreeFromJail();
-        
+
         return true;
     }
     #endregion
@@ -266,7 +266,7 @@ public class GameState
 
     /// <summary>
     /// Rolls the dice for the current player's turn, handles movement and special cases like doubles.
-    /// Changes game phases from PlayerTurnStart to RollingDice to MovingToken to LandingOnSpaceAction.
+    /// Changes game phases from PlayerTurnStart to RollingDice to MovingToken to LandingOnSpaceAction to PostLandingActions.
     /// </summary>
     /// <exception cref="Exception">Thrown if not in the PlayerTurnStart phase</exception>
     public RollResult RollDice()
@@ -285,9 +285,9 @@ public class GameState
         Player currentPlayer = GetCurrentPlayer();
 
         // Handle jail status before movement
-        if (currentPlayer.IsInJail)HandleJailTurn(currentPlayer);
+        if (currentPlayer.IsInJail) HandleJailTurn(currentPlayer);
         else _totalDiceRoll = _diceRoll1 + _diceRoll2;
-        
+
 
         // Handle rolling doubles
         if (_diceRoll1 == _diceRoll2)
@@ -308,15 +308,15 @@ public class GameState
             ChangeGamePhase(GamePhase.MovingToken);
             Console.WriteLine($"Player moved to position {currentPlayer.CurrentPosition}");
         }
-        
+
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
-        
+
         // Salary🥳
         if (passedStart)
         {
             currentPlayer.AddMoney(SALARY_AMOUNT);
         }
-        
+
         // Handle landing on spaces
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new Exception("Invalid space");
 
@@ -357,10 +357,38 @@ public class GameState
 
         var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
         var playerStateInfo = new RollResult.PlayerStateInfo(currentPlayer.IsInJail, currentPlayer.CurrentPosition, currentPlayer.JailTurnsRemaining, currentPlayer.Money);
+
         
+        ChangeGamePhase(GamePhase.PostLandingActions);
+
         return new RollResult(diceInfo, playerStateInfo);
     }
 
+    /// <summary>
+    /// Ends the current player's turn and advances to the next player.
+    /// Changes the game phase from PostLandingActions or LandingOnSpaceAction to PlayerTurnStart.
+    /// </summary>
+    /// <returns>The index of the next player</returns>
+    /// <exception cref="Exception">Thrown if not in the PostLandingActions or LandingOnSpaceAction phase</exception>
+    public int EndTurn()
+    {
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions))
+            throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+
+        Player currentPlayer = GetCurrentPlayer();
+        if (currentPlayer.Money < 0) throw new Exception("You're broke");
+
+        ChangeGamePhase(GamePhase.PlayerTurnStart);
+
+        // If the player rolled doubles and isn't in jail, they get another turn
+        if (currentPlayer.ConsecutiveDoubles > 0 && !currentPlayer.IsInJail)
+            return CurrentPlayerIndex;
+
+        return NextPlayer();
+    }
+
+    #endregion
+    #region Property 
     /// <summary>
     /// Allows the current player to buy the property they have landed on.
     /// Checks if the space is a property, if it's not already owned, and if the player has enough money.
@@ -373,7 +401,7 @@ public class GameState
     /// </exception>
     public (Guid propertyGuid, decimal playerRemainingMoney) BuyProperty()
     {
-        if (!CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Player currentPlayer = GetCurrentPlayer();
 
@@ -391,7 +419,6 @@ public class GameState
 
                     currentPlayer.PropertiesOwned.Add(property.Id);
 
-                    ChangeGamePhase(GamePhase.PostLandingActions);
                     return (property.Id, currentPlayer.Money);
                 }
                 else
@@ -409,28 +436,51 @@ public class GameState
             throw new Exception("This space is not a property that can be purchased");
         }
     }
-    
-    /// <summary>
-    /// Ends the current player's turn and advances to the next player.
-    /// Changes the game phase from PostLandingActions or LandingOnSpaceAction to PlayerTurnStart.
-    /// </summary>
-    /// <returns>The index of the next player</returns>
-    /// <exception cref="Exception">Thrown if not in the PostLandingActions or LandingOnSpaceAction phase</exception>
-    public int EndTurn()
+
+    private (bool result, CountryProperty countryProperty) CheckUpgradeDowngradePermission(Guid propertyGuid)
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.LandingOnSpaceAction)) 
-            throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
-
+        Property property = Board.GetPropertyById(propertyGuid);
         Player currentPlayer = GetCurrentPlayer();
-        if (currentPlayer.Money < 0) throw new Exception("You're broke");
-
-        ChangeGamePhase(GamePhase.PlayerTurnStart);
-
-        // If the player rolled doubles and isn't in jail, they get another turn
-        if (currentPlayer.ConsecutiveDoubles > 0 && !currentPlayer.IsInJail) 
-            return CurrentPlayerIndex;
-            
-        return NextPlayer();
+        // Group ownership checks
+        if (property is CountryProperty countryProperty)
+        {
+            return (Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id), countryProperty);
+        }
+        // TODO: [GameConfig] House spread checks
+        else throw new Exception("Space is not a country");
     }
+
+    public void UpgradeProperty(Guid propertyGuid)
+    {
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+        
+        var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
+
+        if (!playerCanUpgrade) throw new Exception("Cannot perform upgrade for this property");
+        countryProperty.UpgradeRentStage();
+
+    }
+    public void DowngradeProperty(Guid propertyGuid)
+    {
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+
+        var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
+
+        if (!playerCanUpgrade) throw new Exception("Cannot perform downgrade for this property");
+        countryProperty.DownGradeRentStage();
+    }
+    public void MortgageProperty(Guid propertyGuid) {
+        
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
+
+        Property property = Board.GetPropertyById(propertyGuid);
+        Player currentPlayer = GetCurrentPlayer();
+        if (property.IsOwnedByPlayer(currentPlayer.Id))
+        {
+            property.MortgageProperty();
+        }else throw new Exception("Property is not owned by this player");
+    }
+    
+   
     #endregion
 }
