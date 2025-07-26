@@ -447,7 +447,18 @@ public class GameState
 
         if (!property.IsOwnedByPlayer(currentPlayer.Id)) throw new InvalidOperationException($"{currentPlayer.Id} are not permitted to sell this property");
 
+        if (property is CountryProperty countryProperty)
+        {
+            if (Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id))
+            {
+                var propertyHasAHouse = Board.GetPropertiesInGroup(countryProperty.Group).Find(p => p.CurrentRentStage >= RentStage.OneHouse);
+                if (propertyHasAHouse != null) throw new InvalidOperationException("Cannot sell property when other in the group has house");
+            }
+        }
+
         property.SellProperty();
+
+        currentPlayer.PropertiesOwned.Remove(property.Id);
 
         currentPlayer.AddMoney(property.MortgageValue);
     }

@@ -40,12 +40,16 @@ public class CountryProperty : Property
     public void UpgradeRentStage()
     {
         if (OwnerId == null || CurrentRentStage == RentStage.Hotel) throw new InvalidOperationException("Cannot upgrade more in this property");
+
+        if (IsMortgaged) throw new InvalidOperationException("Cannot upgrade mortgaged property");
         CurrentRentStage++;
     }
 
     public void DownGradeRentStage()
     {
         if (OwnerId == null || CurrentRentStage == RentStage.Unimproved) throw new InvalidOperationException("Cannot downgrade more in this property");
+        
+        if (IsMortgaged) throw new InvalidOperationException("Cannot upgrade mortgaged property");
         CurrentRentStage--;
 
     }
