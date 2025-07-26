@@ -78,7 +78,6 @@ public class GameState
     {
         return ActivePlayers[CurrentPlayerIndex];
     }
-
     /// <summary>
     /// Gets a player by their unique ID.
     /// </summary>
@@ -399,7 +398,7 @@ public class GameState
     /// Thrown if not in the LandingOnSpaceAction phase, if the space is not a property,
     /// if the property is already owned, or if the player doesn't have enough money.
     /// </exception>
-    public (Guid propertyGuid, decimal playerRemainingMoney) BuyProperty()
+    public Guid BuyProperty()
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
 
@@ -419,7 +418,7 @@ public class GameState
 
                     currentPlayer.PropertiesOwned.Add(property.Id);
 
-                    return (property.Id, currentPlayer.Money);
+                    return property.Id;
                 }
                 else
                 {
@@ -449,16 +448,18 @@ public class GameState
         // TODO: [GameConfig] House spread checks
         else throw new Exception("Space is not a country");
     }
-
     public void UpgradeProperty(Guid propertyGuid)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new Exception($"{CurrentPhase} is not the appropriate game phase for this action");
-        
+
         var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
 
         if (!playerCanUpgrade) throw new Exception("Cannot perform upgrade for this property");
         countryProperty.UpgradeRentStage();
 
+        Player currentPlayer = GetCurrentPlayer();
+
+        currentPlayer.DeductMoney(countryProperty.HouseCost);
     }
     public void DowngradeProperty(Guid propertyGuid)
     {
@@ -468,6 +469,10 @@ public class GameState
 
         if (!playerCanUpgrade) throw new Exception("Cannot perform downgrade for this property");
         countryProperty.DownGradeRentStage();
+
+        Player currentPlayer = GetCurrentPlayer();
+
+        currentPlayer.AddMoney(countryProperty.HouseSellValue);
     }
     public void MortgageProperty(Guid propertyGuid) {
         
@@ -478,7 +483,10 @@ public class GameState
         if (property.IsOwnedByPlayer(currentPlayer.Id))
         {
             property.MortgageProperty();
-        }else throw new Exception("Property is not owned by this player");
+
+            currentPlayer.AddMoney(property.MortgageValue);
+        }
+        else throw new Exception("Property is not owned by this player");
     }
     
    

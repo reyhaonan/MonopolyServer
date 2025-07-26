@@ -10,6 +10,8 @@ public class CountryProperty : Property
     [JsonInclude]
     public decimal HouseCost { get; init; }
     [JsonInclude]
+    public decimal HouseSellValue { get; init; } // 1/2 of HouseCost
+    [JsonInclude]
     public RentStage CurrentRentStage { get; private set; } // 0-4
 
     public CountryProperty(string name, int boardPosition, decimal price, ColorGroup group, decimal[] rentScheme, decimal houseCost)
@@ -18,6 +20,7 @@ public class CountryProperty : Property
         Group = group;
         RentScheme = rentScheme;
         HouseCost = houseCost;
+        HouseSellValue = houseCost / 2;
         CurrentRentStage = RentStage.Unimproved;
     }
 

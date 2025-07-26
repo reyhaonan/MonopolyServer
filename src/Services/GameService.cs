@@ -71,43 +71,68 @@ namespace MonopolyServer.Services
         public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
         {
             GameState game = GetGame(gameGuid);
-            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+            Player currentPlayer = game.GetCurrentPlayer();
+            if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-            var (propertyGuid, playerRemainingMoney) = game.BuyProperty();
+            var propertyGuid = game.BuyProperty();
             
             await _eventPublisher.PublishGameActionEvent("PropertyBought", gameGuid, new
             {
                 PlayerId = playerGuid,
                 PropertyGuid = propertyGuid,
-                PlayerRemainingMoney = playerRemainingMoney
+                PlayerRemainingMoney = currentPlayer.Money
             });
         }
 
         public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
         {
             GameState game = GetGame(gameGuid);
+            Player currentPlayer = game.GetCurrentPlayer();
 
-            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+            if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
             game.UpgradeProperty(propertyGuid);
+
+            await _eventPublisher.PublishGameActionEvent("PropertyUpgrade", gameGuid, new
+            {
+                PlayerId = playerGuid,
+                PropertyGuid = propertyGuid,
+                PlayerRemainingMoney = currentPlayer.Money
+            });
 
         }
         public async Task DowngradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
         {
             GameState game = GetGame(gameGuid);
+            Player currentPlayer = game.GetCurrentPlayer();
 
-            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+            if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
             game.DowngradeProperty(propertyGuid);
+
+            await _eventPublisher.PublishGameActionEvent("PropertyDowngrade", gameGuid, new
+            {
+                PlayerId = playerGuid,
+                PropertyGuid = propertyGuid,
+                PlayerRemainingMoney = currentPlayer.Money
+            });
 
         }
         public async Task MortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
         {
             GameState game = GetGame(gameGuid);
+            Player currentPlayer = game.GetCurrentPlayer();
 
-            if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+            if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
             game.MortgageProperty(propertyGuid);
+
+            await _eventPublisher.PublishGameActionEvent("PropertyMortgage", gameGuid, new
+            {
+                PlayerId = playerGuid,
+                PropertyGuid = propertyGuid,
+                PlayerRemainingMoney = currentPlayer.Money
+            });
 
         }
 
