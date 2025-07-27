@@ -2,8 +2,15 @@ namespace MonopolyServer.Enums;
 
 public enum TransactionType
 {
-    Fine,
     Rent,
     Salary,
-    Reward
+    Buy,
+    Sell,
+    Upgrade,
+    Downgrade,
+    Mortgage,
+    Unmortgage,
+    Fine,
+    Reward,
+    FreeFromJail,
 }
