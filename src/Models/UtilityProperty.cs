@@ -1,3 +1,4 @@
+namespace MonopolyServer.Models;
 public class UtilityProperty : Property
 {
     public UtilityProperty(string name, int boardPosition)

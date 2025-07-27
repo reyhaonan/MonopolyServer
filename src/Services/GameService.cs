@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
+using MonopolyServer.Models;
 
-namespace MonopolyServer.Services
-{
-    public class GameService : IDisposable
+namespace MonopolyServer.Services;
+
+public class GameService : IDisposable
     {
         private static readonly ConcurrentDictionary<Guid, GameState> _activeGames = new();
         private readonly IEventPublisher _eventPublisher;
@@ -212,4 +213,3 @@ namespace MonopolyServer.Services
             // Currently, the IEventPublisher is responsible for disposing its own resources
         }
     }
-}

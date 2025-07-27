@@ -1,3 +1,4 @@
+namespace MonopolyServer.Enums;
 public enum RentStage
 {
     Unimproved,

@@ -1,3 +1,7 @@
+using MonopolyServer.Enums;
+
+namespace MonopolyServer.Models;
+
 public class Board
 {
     public List<Space> Spaces { get; private set; } = [];
@@ -61,6 +65,14 @@ public class Board
     public List<CountryProperty> GetPropertiesInGroup(ColorGroup group)
     {
         return Spaces.OfType<CountryProperty>().Where(p => p.Group == group).ToList();
+    }
+    public List<UtilityProperty> GetUtilityOwnedByPlayer(Guid playerGuid)
+    {
+        return Spaces.OfType<UtilityProperty>().Where(p => p.OwnerId == playerGuid).ToList();
+    }
+    public List<RailroadProperty> GetRailroadOwnedByPlayer(Guid playerGuid)
+    {
+        return Spaces.OfType<RailroadProperty>().Where(p => p.OwnerId == playerGuid).ToList();
     }
 
     public bool GroupIsOwnedByPlayer(ColorGroup group, Guid playerGuid)

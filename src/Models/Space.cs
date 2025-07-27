@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 
+namespace MonopolyServer.Models;
 [JsonDerivedType(typeof(SpecialSpace), typeDiscriminator: "special")]
 [JsonDerivedType(typeof(Property), typeDiscriminator: "property")]
 [JsonDerivedType(typeof(RailroadProperty), typeDiscriminator: "railroad")]

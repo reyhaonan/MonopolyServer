@@ -1,4 +1,7 @@
 
+using MonopolyServer.Enums;
+
+namespace MonopolyServer.Models;
 public class SpecialSpace : Space
 {
     public PropertyType Type { get; set; } // e.g., Go, Jail, Chance, Tax

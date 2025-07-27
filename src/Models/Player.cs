@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 
+namespace MonopolyServer.Models;
 public class Player
 {
     const int MAX_POSITION = 40;

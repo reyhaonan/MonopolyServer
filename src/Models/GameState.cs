@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
+using MonopolyServer.Enums;
 using MonopolyServer.Utils;
 
+namespace MonopolyServer.Models;
 public class GameState
 {
     const decimal SALARY_AMOUNT = 200;
@@ -29,6 +31,9 @@ public class GameState
     // public List<string> CommunityChestDeck { get; set; } // Simplified for now, could be objects
     [JsonInclude]
     public GamePhase CurrentPhase { get; private set; }
+
+    [JsonInclude]
+    public List<TransactionInfo> TransactionsHistory { get; private set; } = [];
     #endregion
 
     /// <summary>
@@ -53,6 +58,7 @@ public class GameState
     /// <param name="newGamePhase">The new game phase to transition to</param>
     private void ChangeGamePhase(GamePhase newGamePhase)
     {
+        Console.WriteLine($"======Changing Game Phase to: {newGamePhase}======");
         CurrentPhase = newGamePhase;
     }
 
@@ -181,7 +187,7 @@ public class GameState
     public bool PayToGetOutOfJail(Guid playerId)
     {
 
-        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException("Not the appropriate game phase for this action");
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Player? player = GetPlayerById(playerId);
 
@@ -216,7 +222,7 @@ public class GameState
     /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have a Get Out of Jail Free card</exception>
     public bool UseGetOutOfJailFreeCard(Guid playerId)
     {
-        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException("Not the appropriate game phase for this action");
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Player? player = GetPlayerById(playerId);
 
@@ -270,9 +276,10 @@ public class GameState
     /// <exception cref="Exception">Thrown if not in the PlayerTurnStart phase</exception>
     public RollResult RollDice()
     {
-        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException("Not the appropriate game phase for this action");
+        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         ChangeGamePhase(GamePhase.RollingDice);
+
 
         // Gotta reset lil bro
         _totalDiceRoll = 0;
@@ -280,10 +287,12 @@ public class GameState
         // Gamba, might wanna look for better randomness?
         // _diceRoll1 = _random.Next(1, 7);
         // _diceRoll2 = _random.Next(1, 7);
-        _diceRoll1 = 1;
-        _diceRoll2 = 0;
+        _diceRoll1 = 2;
+        _diceRoll2 = 1;
 
         Player currentPlayer = GetCurrentPlayer();
+
+        var transactionInfo = new List<TransactionInfo>();
 
         // Handle jail status before movement
         if (currentPlayer.IsInJail) HandleJailTurn(currentPlayer);
@@ -302,6 +311,7 @@ public class GameState
         else currentPlayer.ResetConsecutiveDouble();
 
         bool passedStart = false;
+
         // Only move if the player is not in jail or just got out of jail
         if (!currentPlayer.IsInJail)
         {
@@ -316,6 +326,7 @@ public class GameState
         if (passedStart)
         {
             currentPlayer.AddMoney(SALARY_AMOUNT);
+            transactionInfo.Add(new TransactionInfo(TransactionType.Salary, null, currentPlayer.Id, SALARY_AMOUNT, true));
         }
 
         // Handle landing on spaces
@@ -342,7 +353,25 @@ public class GameState
             // PROPERTY OWNED BY OTHER PLAYER
             if (property.IsOwnedByOtherPlayer(currentPlayer.Id))
             {
-                var rentValue = property.CalculateRent();
+                var ownerId = property.OwnerId ?? throw new Exception("[Impossible] Landed on a tile owned by other player but no id?");
+
+                decimal rentValue;
+                if (property is CountryProperty countryProperty)
+                {
+                    rentValue = countryProperty.CalculateRent(_totalDiceRoll);
+                }
+                else if (property is UtilityProperty utilityProperty)
+                {
+                    var utilityOwnedByRentOwner = Board.GetUtilityOwnedByPlayer(ownerId);
+                    rentValue = utilityProperty.CalculateRent(_totalDiceRoll, 0, utilityOwnedByRentOwner.Count);
+                }
+                else if (property is RailroadProperty railroadProperty)
+                {
+                    var railroadOwnedByRentOwner = Board.GetRailroadOwnedByPlayer(ownerId);
+                    rentValue = railroadProperty.CalculateRent(0, railroadOwnedByRentOwner.Count);
+                }
+                else throw new Exception("[Impossible] Unhandled property type");
+
 
                 // TODO: [GameConfig] If a player owns a full property set, the base rent payment will be doubled
                 // TODO: [GameConfig] Rent will not be collected when landing on properties whose owners are in prison
@@ -351,6 +380,10 @@ public class GameState
                 currentPlayer.DeductMoney(rentValue);
 
                 // TODO: add money to the owner
+                Player Owner = GetPlayerById(ownerId) ?? throw new Exception("[Impossible] Owner not found on active player list");
+                Owner.AddMoney(rentValue);
+
+                transactionInfo.Add(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false));
             }
         }
         else
@@ -361,18 +394,18 @@ public class GameState
         var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
         var playerStateInfo = new RollResult.PlayerStateInfo(currentPlayer.IsInJail, currentPlayer.CurrentPosition, currentPlayer.JailTurnsRemaining, currentPlayer.Money);
 
-        
+        TransactionsHistory.AddRange(transactionInfo);
         ChangeGamePhase(GamePhase.PostLandingActions);
 
-        return new RollResult(diceInfo, playerStateInfo);
+        return new RollResult(diceInfo, playerStateInfo, transactionInfo);
     }
 
     /// <summary>
     /// Ends the current player's turn and advances to the next player.
-    /// Changes the game phase from PostLandingActions or LandingOnSpaceAction to PlayerTurnStart.
+    /// Changes the game phase from PostLandingActions to PlayerTurnStart.
     /// </summary>
     /// <returns>The index of the next player</returns>
-    /// <exception cref="Exception">Thrown if not in the PostLandingActions or LandingOnSpaceAction phase</exception>
+    /// <exception cref="Exception">Thrown if not in the PostLandingActions phase</exception>
     public int EndTurn()
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions))
@@ -392,7 +425,7 @@ public class GameState
 
     public int DeclareBankcruptcy(Guid playerGuid)
     {
-        Player bankcruptPlayer = ActivePlayers.Find(p => p.Id == playerGuid) ?? throw new InvalidOperationException("Player not found");
+        Player bankcruptPlayer = GetPlayerById(playerGuid) ?? throw new InvalidOperationException("Player not found");
 
         foreach (Guid propertyId in bankcruptPlayer.PropertiesOwned)
         {
@@ -401,10 +434,10 @@ public class GameState
 
         bool isActivePlayer = GetCurrentPlayer().Id == bankcruptPlayer.Id;
 
-        
+
         ActivePlayers.Remove(bankcruptPlayer);
 
-        if (isActivePlayer)ChangeGamePhase(GamePhase.PlayerTurnStart);
+        if (isActivePlayer) ChangeGamePhase(GamePhase.PlayerTurnStart);
         CurrentPlayerIndex %= ActivePlayers.Count;
         return CurrentPlayerIndex;
     }
@@ -461,9 +494,9 @@ public class GameState
 
     public void SellProperty(Guid propertyGuid)
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
         Property property = Board.GetPropertyById(propertyGuid);
-        
+
         Player currentPlayer = GetCurrentPlayer();
 
         if (!property.IsOwnedByPlayer(currentPlayer.Id)) throw new InvalidOperationException($"{currentPlayer.Id} are not permitted to sell this property");
@@ -498,7 +531,7 @@ public class GameState
     }
     public void UpgradeProperty(Guid propertyGuid)
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
 
@@ -511,7 +544,7 @@ public class GameState
     }
     public void DowngradeProperty(Guid propertyGuid)
     {
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
 
@@ -522,9 +555,10 @@ public class GameState
 
         currentPlayer.AddMoney(countryProperty.HouseSellValue);
     }
-    public void MortgageProperty(Guid propertyGuid) {
-        
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+    public void MortgageProperty(Guid propertyGuid)
+    {
+
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Property property = Board.GetPropertyById(propertyGuid);
         Player currentPlayer = GetCurrentPlayer();
@@ -536,9 +570,10 @@ public class GameState
         }
         else throw new InvalidOperationException("Property is not owned by this player");
     }
-    public void UnmortgageProperty(Guid propertyGuid) {
-        
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+    public void UnmortgageProperty(Guid propertyGuid)
+    {
+
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Property property = Board.GetPropertyById(propertyGuid);
         Player currentPlayer = GetCurrentPlayer();
@@ -550,7 +585,7 @@ public class GameState
         }
         else throw new InvalidOperationException("Property is not owned by this player");
     }
-    
-   
+
+
     #endregion
 }

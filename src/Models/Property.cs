@@ -1,5 +1,6 @@
 
 using System.Text.Json.Serialization;
+namespace MonopolyServer.Models;
 
 public class Property : Space
 {
@@ -42,7 +43,8 @@ public class Property : Space
         return !OwnerId.Equals(playerGuid);
     }
 
-    public bool IsOwnedByPlayer(Guid playerGuid) {
+    public bool IsOwnedByPlayer(Guid playerGuid)
+    {
         if (OwnerId == null) return false;
         return OwnerId.Equals(playerGuid);
     }

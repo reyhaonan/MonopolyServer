@@ -1,4 +1,4 @@
-
+namespace MonopolyServer.Enums;
 public enum GamePhase
 {
     WaitingForPlayers,

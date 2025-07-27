@@ -1,50 +1,41 @@
 
 using System.Text.Json.Serialization;
+using MonopolyServer.Models;
 
 namespace MonopolyServer.Utils;
-public struct RollResult
+public readonly struct RollResult
 {
     // Inner struct for dice roll details
-    public struct DiceInfo
+    [method: JsonConstructor]    // Inner struct for dice roll details
+    public readonly struct DiceInfo(int roll1, int roll2, int totalRoll)
     {
-        public int Roll1 { get; }
-        public int Roll2 { get; }
-        public int TotalRoll { get; }
-
-        [JsonConstructor]
-        public DiceInfo(int roll1, int roll2, int totalRoll)
-        {
-            Roll1 = roll1;
-            Roll2 = roll2;
-            TotalRoll = totalRoll;
-        }
+        public int Roll1 { get; } = roll1;
+        public int Roll2 { get; } = roll2;
+        public int TotalRoll { get; } = totalRoll;
     }
 
     // Inner struct for player state after the roll
-    public struct PlayerStateInfo
+    [method: JsonConstructor]
+    // Inner struct for player state after the roll
+    public readonly struct PlayerStateInfo(bool isInJail, int newPlayerPosition, int newPlayerJailTurnsRemaining, decimal newPlayerMoney)
     {
-        public bool isInJail { get; }
-        public int NewPlayerPosition { get; }
-        public int NewPlayerJailTurnsRemaining { get; }
-        public decimal NewPlayerMoney { get; }
-
-        [JsonConstructor]
-        public PlayerStateInfo(bool isInJail, int newPlayerPosition, int newPlayerJailTurnsRemaining, decimal newPlayerMoney)
-        {
-            this.isInJail = isInJail;
-            NewPlayerPosition = newPlayerPosition;
-            NewPlayerMoney = newPlayerMoney;
-            NewPlayerJailTurnsRemaining = newPlayerJailTurnsRemaining;
-        }
+        public bool IsInJail { get; } = isInJail;
+        public int NewPlayerPosition { get; } = newPlayerPosition;
+        public int NewPlayerJailTurnsRemaining { get; } = newPlayerJailTurnsRemaining;
+        public decimal NewPlayerMoney { get; } = newPlayerMoney;
     }
+
 
     public DiceInfo Dice { get; }
     public PlayerStateInfo PlayerState { get; }
 
+    public List<TransactionInfo> Transaction { get; }
+
     [JsonConstructor]
-    public RollResult(DiceInfo dice, PlayerStateInfo playerState)
+    public RollResult(DiceInfo dice, PlayerStateInfo playerState, List<TransactionInfo> transaction)
     {
         Dice = dice;
         PlayerState = playerState;
+        Transaction = transaction;
     }
 }

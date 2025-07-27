@@ -3,10 +3,11 @@ using Confluent.Kafka;
 using MonopolyServer.GameHubs;
 using System.Text.Json;
 using MonopolyServer.Utils;
+using MonopolyServer.Models;
 
-namespace MonopolyServer.Services
-{
-    public class KafkaSignalRNotifierService : BackgroundService
+namespace MonopolyServer.Services;
+
+public class KafkaSignalRNotifierService : BackgroundService
     {
         private readonly IHubContext<GameHubs.GameHubs, IResponse> _hubContext;
         private readonly ILogger<KafkaSignalRNotifierService> _logger;
@@ -179,4 +180,3 @@ namespace MonopolyServer.Services
             base.Dispose();
         }
     }
-}

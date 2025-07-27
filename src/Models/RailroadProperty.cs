@@ -1,3 +1,4 @@
+namespace MonopolyServer.Models;
 public class RailroadProperty : Property
 {
     public RailroadProperty(string name, int boardPosition)
