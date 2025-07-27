@@ -65,12 +65,14 @@ public class GameService : IDisposable
             if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.  current active are: {game.GetCurrentPlayer().Id}");
 
             var result = game.RollDice();
+
+        Console.WriteLine($"Transaction result ${result.Transaction.Count}");
             
             await _eventPublisher.PublishGameActionEvent("DiceRolled", gameGuid, new
-            {
-                PlayerId = playerGuid,
-                RollResult = result
-            });
+        {
+            PlayerId = playerGuid,
+            RollResult = result
+        });
         }
 
         public async Task BuyProperty(Guid gameGuid, Guid playerGuid)

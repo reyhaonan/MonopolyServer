@@ -83,6 +83,7 @@ public class KafkaSignalRNotifierService : BackgroundService
                             else if (eventType == "DiceRolled")
                             {
                                 var result = eventData.GetProperty("RollResult").Deserialize<RollResult>();
+                                _logger.LogCritical($"TRANSACTION RESULT, {result.Transaction.Count}");
                                 var playerId = eventData.GetProperty("PlayerId").GetGuid();
                                 await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, playerId, result);
                             }

@@ -4,8 +4,6 @@ using MonopolyServer.Utils;
 
 namespace MonopolyServer.Models;
 
-delegate void TransactionCallback(decimal amount);
-
 public class GameState
 {
     const decimal SALARY_AMOUNT = 200;
@@ -36,7 +34,7 @@ public class GameState
     public GamePhase CurrentPhase { get; private set; }
 
     [JsonInclude]
-    public List<TransactionInfo> TransactionsHistory { get; private set; } = [];
+    public TransactionHistory TransactionsHistory { get; init; }
     #endregion
 
     /// <summary>
@@ -52,6 +50,8 @@ public class GameState
 
         CurrentPhase = GamePhase.WaitingForPlayers;
 
+        TransactionsHistory = new TransactionHistory([]);
+
         InitializeDecks();
     }
 
@@ -64,14 +64,6 @@ public class GameState
         Console.WriteLine($"======Changing Game Phase to: {newGamePhase}======");
         CurrentPhase = newGamePhase;
     }
-
-    #region Transaction
-    private void AddTransaction(TransactionInfo transaction, TransactionCallback cb)
-    {
-        TransactionsHistory.Add(transaction);
-        cb.Invoke(transaction.Amount);
-    }
-    #endregion
 
     #region Player Management
     /// <summary>
@@ -211,11 +203,13 @@ public class GameState
             throw new InvalidOperationException("Not enough money to pay the jail fee");
         }
 
-        AddTransaction(new TransactionInfo(TransactionType.FreeFromJail, currentPlayer.Id, null, JAIL_FEE, true), (amount) =>
+        TransactionsHistory.StartTransaction();
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.FreeFromJail, currentPlayer.Id, null, JAIL_FEE, true), (amount) =>
         {
             currentPlayer.DeductMoney(amount);
             currentPlayer.FreeFromJail();
         });
+        TransactionsHistory.CommitTransaction();
     }
 
     /// <summary>
@@ -296,7 +290,7 @@ public class GameState
 
         Player currentPlayer = GetCurrentPlayer();
 
-        var transactionInfo = new List<TransactionInfo>();
+
 
         // Handle jail status before movement
         if (currentPlayer.IsInJail) HandleJailTurn(currentPlayer);
@@ -326,13 +320,14 @@ public class GameState
 
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
 
+        TransactionsHistory.StartTransaction();
         // Salary🥳
         if (passedStart)
         {
-            AddTransaction(
+            TransactionsHistory.AddTransaction(
                 new TransactionInfo(TransactionType.Salary, null, currentPlayer.Id, SALARY_AMOUNT, true),
                 (amount) => currentPlayer.AddMoney(amount)
-                );
+            );
         }
 
         // Handle landing on spaces
@@ -389,7 +384,7 @@ public class GameState
                 Player Owner = GetPlayerById(ownerId) ?? throw new Exception("[Impossible] Owner not found on active player list");
 
 
-                AddTransaction(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false), (amount) =>
+                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false), (amount) =>
                 {
                     currentPlayer.DeductMoney(amount);
                     Owner.AddMoney(amount);
@@ -406,6 +401,7 @@ public class GameState
 
         ChangeGamePhase(GamePhase.PostLandingActions);
 
+        var transactionInfo = TransactionsHistory.CommitTransaction();
         return new RollResult(diceInfo, playerStateInfo, transactionInfo);
     }
 
@@ -477,12 +473,14 @@ public class GameState
             {
                 if (currentPlayer.Money >= property.PurchasePrice)
                 {
-                    AddTransaction(new TransactionInfo(TransactionType.Buy, currentPlayer.Id, null, property.PurchasePrice, true), (amount) =>
+                    TransactionsHistory.StartTransaction();
+                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Buy, currentPlayer.Id, null, property.PurchasePrice, true), (amount) =>
                     {
                         currentPlayer.DeductMoney(amount);
                         property.BuyProperty(currentPlayer.Id);
                         currentPlayer.PropertiesOwned.Add(property.Id);
                     });
+                    TransactionsHistory.CommitTransaction();
 
 
                     return property.Id;
@@ -520,8 +518,8 @@ public class GameState
                 if (propertyHasAHouse != null) throw new InvalidOperationException("Cannot sell property when other in the group has house");
             }
         }
-
-        AddTransaction(new TransactionInfo(TransactionType.Sell, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
+        TransactionsHistory.StartTransaction();
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Sell, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
         {
             property.SellProperty();
 
@@ -529,6 +527,7 @@ public class GameState
 
             currentPlayer.AddMoney(amount);
         });
+        TransactionsHistory.CommitTransaction();
     }
 
     private (bool result, CountryProperty countryProperty) CheckUpgradeDowngradePermission(Guid propertyGuid)
@@ -552,11 +551,14 @@ public class GameState
         if (!playerCanUpgrade) throw new InvalidOperationException("Cannot perform upgrade for this property");
 
         Player currentPlayer = GetCurrentPlayer();
-        AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseCost, true), (amount) =>
+
+        TransactionsHistory.StartTransaction();
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseCost, true), (amount) =>
         {
             countryProperty.UpgradeRentStage();
             currentPlayer.DeductMoney(amount);
         });
+        TransactionsHistory.CommitTransaction();
 
 
     }
@@ -569,11 +571,13 @@ public class GameState
         if (!playerCanUpgrade) throw new InvalidOperationException("Cannot perform downgrade for this property");
         Player currentPlayer = GetCurrentPlayer();
 
-        AddTransaction(new TransactionInfo(TransactionType.Downgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>
+        TransactionsHistory.StartTransaction();
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Downgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>
         {
             countryProperty.DownGradeRentStage();
             currentPlayer.AddMoney(amount);
         });
+        TransactionsHistory.CommitTransaction();
     }
     public void MortgageProperty(Guid propertyGuid)
     {
@@ -584,12 +588,14 @@ public class GameState
         Player currentPlayer = GetCurrentPlayer();
         if (property.IsOwnedByPlayer(currentPlayer.Id))
         {
-            AddTransaction(new TransactionInfo(TransactionType.Mortgage, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
+            TransactionsHistory.StartTransaction();
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Mortgage, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
             {
                 property.MortgageProperty();
 
                 currentPlayer.AddMoney(amount);
             });
+            TransactionsHistory.CommitTransaction();
         }
         else throw new InvalidOperationException("Property is not owned by this player");
     }
@@ -602,12 +608,14 @@ public class GameState
         Player currentPlayer = GetCurrentPlayer();
         if (property.IsOwnedByPlayer(currentPlayer.Id))
         {
-            AddTransaction(new TransactionInfo(TransactionType.Unmortgage, currentPlayer.Id, null, property.UnmortgageCost, true), (amount) =>
+            TransactionsHistory.StartTransaction();
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Unmortgage, currentPlayer.Id, null, property.UnmortgageCost, true), (amount) =>
             {
                 property.UnmortgageProperty();
 
                 currentPlayer.DeductMoney(amount);
             });
+            TransactionsHistory.CommitTransaction();
 
         }
         else throw new InvalidOperationException("Property is not owned by this player");

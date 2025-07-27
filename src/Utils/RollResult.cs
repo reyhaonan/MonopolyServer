@@ -26,9 +26,11 @@ public readonly struct RollResult
     }
 
 
+    [JsonInclude]
     public DiceInfo Dice { get; }
+    [JsonInclude]
     public PlayerStateInfo PlayerState { get; }
-
+    [JsonInclude]
     public List<TransactionInfo> Transaction { get; }
 
     [JsonConstructor]
