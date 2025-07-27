@@ -76,6 +76,11 @@ public class KafkaSignalRNotifierService : BackgroundService
                                 var newPlayerOrder = eventData.GetProperty("NewPlayerOrder").Deserialize<List<Player>>() ?? throw new Exception("Invalid player list");
                                 await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, newPlayerOrder);
                             }
+                            else if (eventType == "GameOver")
+                            {
+                                var winningPlayerGuid = eventData.GetProperty("WinningPlayerGuid").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).GameOverResponse(gameId, winningPlayerGuid);
+                            }
                             #endregion
 
                             #region Game Event

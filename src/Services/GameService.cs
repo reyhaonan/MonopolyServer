@@ -203,7 +203,10 @@ public class GameService : IDisposable
 
             if (game.ActivePlayers.Count == 1)
             {
-                // TODO: GameControl win event
+                await _eventPublisher.PublishGameControlEvent("GameOver", gameGuid, new
+                {
+                    WinningPlayerGuid = game.ActivePlayers.First().Id
+                });
             }
 
         }
