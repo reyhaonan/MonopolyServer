@@ -25,7 +25,7 @@ public class CountryProperty : Property
         CurrentRentStage = RentStage.Unimproved;
     }
 
-    protected override void ResetProperty()
+    public override void ResetProperty()
     {
         CurrentRentStage = RentStage.Unimproved;
         base.ResetProperty();

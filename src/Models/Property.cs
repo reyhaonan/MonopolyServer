@@ -28,7 +28,7 @@ public class Property : Space
 
     public virtual decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0) { return 9999; }
 
-    protected virtual void ResetProperty()
+    public virtual void ResetProperty()
     {
         OwnerId = null;
         IsMortgaged = false;
@@ -69,6 +69,7 @@ public class Property : Space
     public virtual void SellProperty()
     {
         if (OwnerId == null) throw new Exception("Nobody own this...");
+        if (IsMortgaged) throw new InvalidOperationException("Cannot sell mortgaged property");
         ResetProperty();
     }
 }

@@ -78,11 +78,12 @@ public class Board
     public bool GroupIsOwnedByPlayer(ColorGroup group, Guid playerGuid)
     {
         var properties = GetPropertiesInGroup(group);
-        foreach (var property in properties)
-        {
-            if (property.OwnerId == null || !property.OwnerId.Equals(playerGuid)) return false;
-        }
-        return true;
+        return properties.All(property => property.OwnerId != null && property.OwnerId.Equals(playerGuid));
+    }
+    public bool NoMortgagedPropertyInGroup(ColorGroup group)
+    {
+        var properties = GetPropertiesInGroup(group);
+        return properties.All(property => property.OwnerId != null && !property.IsMortgaged);
     }
 }
 

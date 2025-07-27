@@ -283,10 +283,10 @@ public class GameState
         _totalDiceRoll = 0;
 
         // Gamba, might wanna look for better randomness?
-        // _diceRoll1 = _random.Next(1, 7);
-        // _diceRoll2 = _random.Next(1, 7);
-        _diceRoll1 = 2;
-        _diceRoll2 = 1;
+        _diceRoll1 = _random.Next(1, 7);
+        _diceRoll2 = _random.Next(1, 7);
+        // _diceRoll1 = 2;
+        // _diceRoll2 = 0;
 
         Player currentPlayer = GetCurrentPlayer();
 
@@ -383,12 +383,14 @@ public class GameState
                 // TODO: add money to the owner
                 Player Owner = GetPlayerById(ownerId) ?? throw new Exception("[Impossible] Owner not found on active player list");
 
-
-                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false), (amount) =>
+                if (rentValue != 0)
                 {
-                    currentPlayer.DeductMoney(amount);
-                    Owner.AddMoney(amount);
-                });
+                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false), (amount) =>
+                    {
+                        currentPlayer.DeductMoney(amount);
+                        Owner.AddMoney(amount);
+                    });
+                }
             }
         }
         else
@@ -434,7 +436,7 @@ public class GameState
 
         foreach (Guid propertyId in bankcruptPlayer.PropertiesOwned)
         {
-            Board.GetPropertyById(propertyId).SellProperty();
+            Board.GetPropertyById(propertyId).ResetProperty();
         }
 
         bool isActivePlayer = GetCurrentPlayer().Id == bankcruptPlayer.Id;
@@ -537,7 +539,9 @@ public class GameState
         // Group ownership checks
         if (property is CountryProperty countryProperty)
         {
-            return (Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id), countryProperty);
+            bool ownedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
+            bool noMortgagedProperty = Board.NoMortgagedPropertyInGroup(countryProperty.Group);
+            return (ownedByPlayer && noMortgagedProperty, countryProperty);
         }
         // TODO: [GameConfig] House spread checks
         else throw new InvalidOperationException("Space is not a country");
@@ -588,6 +592,14 @@ public class GameState
         Player currentPlayer = GetCurrentPlayer();
         if (property.IsOwnedByPlayer(currentPlayer.Id))
         {
+            // Disallow mortgage if player has a house in a group
+            if (property is CountryProperty countryProperty)
+            {
+                bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
+                bool noHouseInGroup = Board.GetPropertiesInGroup(countryProperty.Group).All(property => property.CurrentRentStage == RentStage.Unimproved);
+
+                if(!groupIsOwnedByPlayer || !noHouseInGroup)throw new InvalidOperationException("Cannot mortgage if other property has house");
+            }
             TransactionsHistory.StartTransaction();
             TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Mortgage, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
             {
