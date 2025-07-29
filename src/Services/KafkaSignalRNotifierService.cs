@@ -14,15 +14,12 @@ public class KafkaSignalRNotifierService : BackgroundService
         private IConsumer<string, string> _kafkaConsumer;
 
         private readonly IConfiguration Configuration;
-        private GameService GameService;
 
         public KafkaSignalRNotifierService(IHubContext<GameHubs.GameHubs, IResponse> hubContext,
                                            ILogger<KafkaSignalRNotifierService> logger,GameService gameService, IConfiguration configuration)
         {
             _hubContext = hubContext;
             _logger = logger;
-
-            GameService = gameService;
 
             Configuration = configuration;
 
