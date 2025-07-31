@@ -4,10 +4,13 @@ using MonopolyServer.Utils;
 
 namespace MonopolyServer.Models;
 
+using Microsoft.Extensions.Logging;
+
 public class GameState
 {
     const decimal SALARY_AMOUNT = 200;
     #region Private property
+    private readonly ILogger _logger;
     private static readonly Random _random = new Random();
     private int _diceRoll1 { get; set; } = 0;
     private int _diceRoll2 { get; set; } = 0;
@@ -42,8 +45,9 @@ public class GameState
     /// creates a new board, sets the initial game phase to WaitingForPlayers,
     /// and initializes the card decks.
     /// </summary>
-    public GameState()
+    public GameState(ILogger<GameState> logger)
     {
+        _logger = logger;
         GameId = Guid.NewGuid();
 
         Board = new Board();
@@ -61,7 +65,7 @@ public class GameState
     /// <param name="newGamePhase">The new game phase to transition to</param>
     private void ChangeGamePhase(GamePhase newGamePhase)
     {
-        Console.WriteLine($"======Changing Game Phase to: {newGamePhase}======");
+        _logger.LogInformation($"======Changing Game Phase to: {newGamePhase}======");
         CurrentPhase = newGamePhase;
     }
 
@@ -142,7 +146,7 @@ public class GameState
     /// <returns>The index of the next player</returns>
     private int NextPlayer()
     {
-        Console.WriteLine($"Invoked next player {CurrentPlayerIndex}, Count: {ActivePlayers.Count}");
+        _logger.LogInformation($"Invoked next player {CurrentPlayerIndex}, Count: {ActivePlayers.Count}");
 
         // Loop back to 0
         CurrentPlayerIndex = (CurrentPlayerIndex + 1) % ActivePlayers.Count;
@@ -168,7 +172,7 @@ public class GameState
 
             // This line specifically enable the movement
             _totalDiceRoll = _diceRoll1 + _diceRoll2;
-            Console.WriteLine($"Player {player.Name} rolled doubles and got out of jail!");
+            _logger.LogInformation($"Player {player.Name} rolled doubles and got out of jail!");
         }
         else
         {
@@ -315,7 +319,7 @@ public class GameState
         {
             passedStart = currentPlayer.MoveBy(_totalDiceRoll);
             ChangeGamePhase(GamePhase.MovingToken);
-            Console.WriteLine($"Player moved to position {currentPlayer.CurrentPosition}");
+            _logger.LogInformation($"Player moved to position {currentPlayer.CurrentPosition}");
         }
 
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
@@ -337,14 +341,14 @@ public class GameState
         if (space is SpecialSpace { Type: PropertyType.GoToJail })
         {
             currentPlayer.GoToJail();
-            Console.WriteLine($"{currentPlayer.Name} landed on Go To Jail!");
+            _logger.LogInformation($"{currentPlayer.Name} landed on Go To Jail!");
         }
 
         // Landed on special(ntar)
         else if (space is SpecialSpace specialSpace)
         {
             // TODO: other special space action
-            Console.WriteLine($"{currentPlayer.Name} landed on another special space of type {specialSpace.Type}.");
+            _logger.LogInformation($"{currentPlayer.Name} landed on another special space of type {specialSpace.Type}.");
             // TODO: [GameConfig] If a player lands on Vacation, all collected money from taxes and bank payments will be earned
         }
 
@@ -377,7 +381,7 @@ public class GameState
                 // TODO: [GameConfig] If a player owns a full property set, the base rent payment will be doubled
                 // TODO: [GameConfig] Rent will not be collected when landing on properties whose owners are in prison
 
-                Console.WriteLine($"Deducting {currentPlayer.Name}'s money from rent: {rentValue}");
+                _logger.LogInformation($"Deducting {currentPlayer.Name}'s money from rent: {rentValue}");
 
 
                 // TODO: add money to the owner
@@ -395,7 +399,7 @@ public class GameState
         }
         else
         {
-            Console.WriteLine($"{currentPlayer.Name} landed on an unknown space type.");
+            _logger.LogInformation($"{currentPlayer.Name} landed on an unknown space type.");
         }
 
         var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);

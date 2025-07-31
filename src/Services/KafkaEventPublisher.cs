@@ -28,7 +28,7 @@ public class KafkaEventPublisher : IEventPublisher, IDisposable
         
         foreach (var prop in eventData.GetType().GetProperties())
         {
-            fullEvent[prop.Name] = prop.GetValue(eventData);
+            fullEvent[prop.Name] = prop.GetValue(eventData) ?? throw new InvalidDataException("No event data found");
         }
         
         await _kafkaProducer.ProduceAsync(_configuration["Kafka:GameControlTopic"], new Message<string, string>
@@ -48,7 +48,7 @@ public class KafkaEventPublisher : IEventPublisher, IDisposable
         
         foreach (var prop in eventData.GetType().GetProperties())
         {
-            fullEvent[prop.Name] = prop.GetValue(eventData);
+            fullEvent[prop.Name] = prop.GetValue(eventData) ?? throw new InvalidDataException("No event data found");
         }
         
         await _kafkaProducer.ProduceAsync(_configuration["Kafka:GameEventsTopic"], new Message<string, string>

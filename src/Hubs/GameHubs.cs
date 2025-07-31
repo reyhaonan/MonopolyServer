@@ -35,21 +35,24 @@ public interface IResponse
 public class GameHubs : Hub<IResponse>
 {
     private readonly GameService _gameService;
-    public GameHubs(GameService gameService)
+    
+    private readonly ILogger<GameHubs> _logger;
+    public GameHubs(GameService gameService, ILogger<GameHubs> logger)
     {
         _gameService = gameService;
+        _logger = logger;
     }
 
     public override async Task OnConnectedAsync()
     {
 
-        Console.WriteLine($"Client connected: {Context.ConnectionId}");
+        _logger.LogInformation($"Client connected: {Context.ConnectionId}");
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        Console.WriteLine($"Client disconnected: {Context.ConnectionId}, Exception: {exception?.ToString()}");
+        _logger.LogInformation($"Client disconnected: {Context.ConnectionId}, Exception: {exception?.ToString()}");
 
 
         await base.OnDisconnectedAsync(exception);
@@ -108,7 +111,6 @@ public class GameHubs : Hub<IResponse>
     }        
     public async Task EndTurn(Guid gameGuid, Guid playerGuid)
     {
-        Console.Write("Ending turn...");
         await _gameService.EndTurn(gameGuid, playerGuid);
     }
     public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
