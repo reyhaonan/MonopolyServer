@@ -23,15 +23,13 @@ public class GameService : IDisposable
             return game;
         }
 
-        public async Task<(Guid gameGuid, GameState gameState)> CreateNewGame()
+        public Guid CreateNewGame()
         {
             var newGame = new GameState();
             Guid gameGuid = newGame.GameId;
             _activeGames.TryAdd(gameGuid, newGame);
 
-            await _eventPublisher.PublishGameControlEvent("GameCreated", gameGuid, new { Game = newGame });
-
-            return (gameGuid, newGame);
+            return gameGuid;
         }
         
 

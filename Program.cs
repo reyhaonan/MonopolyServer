@@ -12,6 +12,7 @@ builder.Services.AddSignalR(options =>
 builder.Services.AddEndpointsApiExplorer();
 
 var AllowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+Console.WriteLine($"AllowedOrigins: {string.Join(", ", AllowedOrigins ?? new string[0])}");
 
 // Register event publisher
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
@@ -47,7 +48,9 @@ app.UseCors("CorsPolicy");
         using (var scope = app.Services.CreateScope())
         {
             var gameRoute = scope.ServiceProvider.GetRequiredService<GameRoute>();
-                        gameRoute.Map(app);
+            Console.WriteLine("Mapping GameRoute...");
+            gameRoute.Map(app);
+            Console.WriteLine("GameRoute mapping completed.");
         }
 
 

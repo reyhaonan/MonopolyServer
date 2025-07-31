@@ -13,10 +13,10 @@ public class GameRoute
     public void Map(WebApplication app)
     {
 
-        app.MapPost("/game/create", async () =>
+        app.MapPost("/game/create", () =>
         {
-            var (game, _) = await _gameService.CreateNewGame();
-            return game.ToString();
+            Guid gameGuid = _gameService.CreateNewGame();
+            return gameGuid.ToString();
         })
            .WithSummary("Get Game")
            .WithDescription("This endpoint returns a game message.");

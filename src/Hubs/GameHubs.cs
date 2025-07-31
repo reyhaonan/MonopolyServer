@@ -55,14 +55,6 @@ public class GameHubs : Hub<IResponse>
         await base.OnDisconnectedAsync(exception);
     }
 
-    // TODO: Remove and make this one a rest api
-    public async Task CreateGame()
-    {
-        (Guid gameGuid, GameState newGame) = await _gameService.CreateNewGame();
-
-        await Clients.Caller.CreateGameResponse(gameGuid);
-    }
-
     #region Game Control
     public async Task JoinGame(Guid gameGuid, string playerName)
     {
