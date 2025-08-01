@@ -23,12 +23,12 @@ public interface IResponse
 
 
     // 
-    Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
-    Task PropertySoldResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
-    Task PropertyDowngradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
-    Task PropertyUpgradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
-    Task PropertyMortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
-    Task PropertyUnmortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, decimal playerRemainingMoney);
+    Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
+    Task PropertySoldResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
+    Task PropertyDowngradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
+    Task PropertyUpgradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
+    Task PropertyMortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
+    Task PropertyUnmortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
     #endregion
 }
 

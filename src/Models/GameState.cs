@@ -465,7 +465,7 @@ public class GameState
     /// Thrown if not in the LandingOnSpaceAction phase, if the space is not a property,
     /// if the property is already owned, or if the player doesn't have enough money.
     /// </exception>
-    public Guid BuyProperty()
+    public (Guid,List<TransactionInfo>) BuyProperty()
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
@@ -486,10 +486,10 @@ public class GameState
                         property.BuyProperty(currentPlayer.Id);
                         currentPlayer.PropertiesOwned.Add(property.Id);
                     });
-                    TransactionsHistory.CommitTransaction();
+                    var transactionResult = TransactionsHistory.CommitTransaction();
 
 
-                    return property.Id;
+                    return (property.Id, transactionResult);
                 }
                 else
                 {
@@ -507,7 +507,7 @@ public class GameState
         }
     }
 
-    public void SellProperty(Guid propertyGuid)
+    public List<TransactionInfo> SellProperty(Guid propertyGuid)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
         Property property = Board.GetPropertyById(propertyGuid);
@@ -533,7 +533,7 @@ public class GameState
 
             currentPlayer.AddMoney(amount);
         });
-        TransactionsHistory.CommitTransaction();
+        return TransactionsHistory.CommitTransaction();
     }
 
     private (bool result, CountryProperty countryProperty) CheckUpgradeDowngradePermission(Guid propertyGuid)
@@ -550,7 +550,7 @@ public class GameState
         // TODO: [GameConfig] House spread checks
         else throw new InvalidOperationException("Space is not a country");
     }
-    public void UpgradeProperty(Guid propertyGuid)
+    public List<TransactionInfo> UpgradeProperty(Guid propertyGuid)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
@@ -566,11 +566,9 @@ public class GameState
             countryProperty.UpgradeRentStage();
             currentPlayer.DeductMoney(amount);
         });
-        TransactionsHistory.CommitTransaction();
-
-
+        return TransactionsHistory.CommitTransaction();
     }
-    public void DowngradeProperty(Guid propertyGuid)
+    public List<TransactionInfo> DowngradeProperty(Guid propertyGuid)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
@@ -585,9 +583,9 @@ public class GameState
             countryProperty.DownGradeRentStage();
             currentPlayer.AddMoney(amount);
         });
-        TransactionsHistory.CommitTransaction();
+        return TransactionsHistory.CommitTransaction();
     }
-    public void MortgageProperty(Guid propertyGuid)
+    public List<TransactionInfo> MortgageProperty(Guid propertyGuid)
     {
 
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
@@ -611,11 +609,11 @@ public class GameState
 
                 currentPlayer.AddMoney(amount);
             });
-            TransactionsHistory.CommitTransaction();
+            return TransactionsHistory.CommitTransaction();
         }
         else throw new InvalidOperationException("Property is not owned by this player");
     }
-    public void UnmortgageProperty(Guid propertyGuid)
+    public List<TransactionInfo> UnmortgageProperty(Guid propertyGuid)
     {
 
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
@@ -631,7 +629,7 @@ public class GameState
 
                 currentPlayer.DeductMoney(amount);
             });
-            TransactionsHistory.CommitTransaction();
+            return TransactionsHistory.CommitTransaction();
 
         }
         else throw new InvalidOperationException("Property is not owned by this player");

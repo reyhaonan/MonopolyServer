@@ -104,44 +104,44 @@ public class KafkaSignalRNotifierService : BackgroundService
                             else if (eventType == "PropertyBought")
                             {
                                 var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
-                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
                                 var buyerId = eventData.GetProperty("PlayerId").GetGuid();
-                                await _hubContext.Clients.Group(gameId.ToString()).PropertyBoughtResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyBoughtResponse(gameId, buyerId, propertyGuid, transactions);
                             }
                             else if (eventType == "PropertySold")
                             {
                                 var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
-                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
                                 var buyerId = eventData.GetProperty("PlayerId").GetGuid();
-                                await _hubContext.Clients.Group(gameId.ToString()).PropertySoldResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertySoldResponse(gameId, buyerId, propertyGuid, transactions);
                             }
                             else if (eventType == "PropertyUpgrade")
                             {
                                 var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
-                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
                                 var buyerId = eventData.GetProperty("PlayerId").GetGuid();
-                                await _hubContext.Clients.Group(gameId.ToString()).PropertyUpgradeResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyUpgradeResponse(gameId, buyerId, propertyGuid, transactions);
                             }
                             else if (eventType == "PropertyDowngrade")
                             {
                                 var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
-                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
                                 var buyerId = eventData.GetProperty("PlayerId").GetGuid();
-                                await _hubContext.Clients.Group(gameId.ToString()).PropertyDowngradeResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyDowngradeResponse(gameId, buyerId, propertyGuid, transactions);
                             }
                             else if (eventType == "PropertyMortgage")
                             {
                                 var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
-                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
                                 var buyerId = eventData.GetProperty("PlayerId").GetGuid();
-                                await _hubContext.Clients.Group(gameId.ToString()).PropertyMortgagedResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyMortgagedResponse(gameId, buyerId, propertyGuid, transactions);
                             }
                             else if (eventType == "PropertyUnmortgage")
                             {
                                 var propertyGuid = eventData.GetProperty("PropertyGuid").GetGuid();
-                                var playerRemainingMoney = eventData.GetProperty("PlayerRemainingMoney").GetDecimal();
+                                var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
                                 var buyerId = eventData.GetProperty("PlayerId").GetGuid();
-                                await _hubContext.Clients.Group(gameId.ToString()).PropertyUnmortgagedResponse(gameId, buyerId, propertyGuid, playerRemainingMoney);
+                                await _hubContext.Clients.Group(gameId.ToString()).PropertyUnmortgagedResponse(gameId, buyerId, propertyGuid, transactions);
                             }
                             #endregion
                             #endregion

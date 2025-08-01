@@ -80,13 +80,13 @@ public class GameService : IDisposable
         Player currentPlayer = game.GetCurrentPlayer();
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-        var propertyGuid = game.BuyProperty();
+        var (propertyGuid, transactions) = game.BuyProperty();
         
         await _eventPublisher.PublishGameActionEvent("PropertyBought", gameGuid, new
         {
             PlayerId = playerGuid,
             PropertyGuid = propertyGuid,
-            PlayerRemainingMoney = currentPlayer.Money
+            Transactions = transactions
         });
     }
     public async Task SellProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
@@ -95,13 +95,13 @@ public class GameService : IDisposable
         Player currentPlayer = game.GetCurrentPlayer();
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-        game.SellProperty(propertyGuid);
+        var transactions = game.SellProperty(propertyGuid);
         
         await _eventPublisher.PublishGameActionEvent("PropertySold", gameGuid, new
         {
             PlayerId = playerGuid,
             PropertyGuid = propertyGuid,
-            PlayerRemainingMoney = currentPlayer.Money
+            Transactions = transactions
         });
     }
 
@@ -112,13 +112,13 @@ public class GameService : IDisposable
 
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-        game.UpgradeProperty(propertyGuid);
+        var transactions = game.UpgradeProperty(propertyGuid);
 
         await _eventPublisher.PublishGameActionEvent("PropertyUpgrade", gameGuid, new
         {
             PlayerId = playerGuid,
             PropertyGuid = propertyGuid,
-            PlayerRemainingMoney = currentPlayer.Money
+            Transactions = transactions
         });
 
     }
@@ -129,13 +129,13 @@ public class GameService : IDisposable
 
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-        game.DowngradeProperty(propertyGuid);
+        var transactions = game.DowngradeProperty(propertyGuid);
 
         await _eventPublisher.PublishGameActionEvent("PropertyDowngrade", gameGuid, new
         {
             PlayerId = playerGuid,
             PropertyGuid = propertyGuid,
-            PlayerRemainingMoney = currentPlayer.Money
+            Transactions = transactions
         });
 
     }
@@ -146,13 +146,13 @@ public class GameService : IDisposable
 
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-        game.MortgageProperty(propertyGuid);
+        var transactions = game.MortgageProperty(propertyGuid);
 
         await _eventPublisher.PublishGameActionEvent("PropertyMortgage", gameGuid, new
         {
             PlayerId = playerGuid,
             PropertyGuid = propertyGuid,
-            PlayerRemainingMoney = currentPlayer.Money
+            Transactions = transactions
         });
 
     }
@@ -163,13 +163,13 @@ public class GameService : IDisposable
 
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
-        game.UnmortgageProperty(propertyGuid);
+        var transactions = game.UnmortgageProperty(propertyGuid);
 
         await _eventPublisher.PublishGameActionEvent("PropertyUnmortgage", gameGuid, new
         {
             PlayerId = playerGuid,
             PropertyGuid = propertyGuid,
-            PlayerRemainingMoney = currentPlayer.Money
+            Transactions = transactions
         });
 
     }
