@@ -338,17 +338,38 @@ public class GameState
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new InvalidOperationException("Invalid space");
 
         // Landed on Go To Jail👮‍♂️
-        if (space is SpecialSpace { Type: PropertyType.GoToJail })
-        {
-            currentPlayer.GoToJail();
-            _logger.LogInformation($"{currentPlayer.Name} landed on Go To Jail!");
-        }
+        
 
         // Landed on special(ntar)
-        else if (space is SpecialSpace specialSpace)
+        if (space is SpecialSpace specialSpace)
         {
-            // TODO: other special space action
             _logger.LogInformation($"{currentPlayer.Name} landed on another special space of type {specialSpace.Type}.");
+            switch (specialSpace.Type)
+            {
+                case SpecialSpaceType.GoToJail:
+                    currentPlayer.GoToJail();
+                    break;
+                case SpecialSpaceType.IncomeTax:
+                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 200, true), (amount) =>
+                    {
+                        currentPlayer.DeductMoney(amount);
+                    });
+                    break;
+                case SpecialSpaceType.LuxuryTax:
+                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 100, true), (amount) =>
+                    {
+                        currentPlayer.DeductMoney(amount);
+                    });
+                    break;
+                case SpecialSpaceType.Chance:
+                    // TODO: this
+                    break;
+                case SpecialSpaceType.CommunityChest:
+                    // TODO: this
+                    break;
+                default:
+                    throw new Exception("How did you land on this space??");
+            }
             // TODO: [GameConfig] If a player lands on Vacation, all collected money from taxes and bank payments will be earned
         }
 
@@ -383,8 +404,6 @@ public class GameState
 
                 _logger.LogInformation($"Deducting {currentPlayer.Name}'s money from rent: {rentValue}");
 
-
-                // TODO: add money to the owner
                 Player Owner = GetPlayerById(ownerId) ?? throw new Exception("[Impossible] Owner not found on active player list");
 
                 if (rentValue != 0)

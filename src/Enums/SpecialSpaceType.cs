@@ -1,9 +1,6 @@
 namespace MonopolyServer.Enums;
-public enum PropertyType
+public enum SpecialSpaceType
 {
-    Color,
-    Railroad,
-    Utility,
     Go,
     CommunityChest,
     Chance,
@@ -12,5 +9,4 @@ public enum PropertyType
     Jail,
     GoToJail,
     FreeParking,
-    JustVisiting // For the Jail space itself when not sent to jail
 }
