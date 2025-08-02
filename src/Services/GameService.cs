@@ -3,7 +3,7 @@ using MonopolyServer.Models;
 
 namespace MonopolyServer.Services;
 
-public class GameService : IDisposable
+public class GameService
 {
     private static readonly ConcurrentDictionary<Guid, GameState> _activeGames = new();
     private readonly IEventPublisher _eventPublisher;
@@ -35,7 +35,7 @@ public class GameService : IDisposable
 
         return gameGuid;
     }
-    
+
 
     public async Task<Player> AddPlayerToGame(Guid gameGuid, string playerName)
     {
@@ -49,6 +49,8 @@ public class GameService : IDisposable
         return newPlayer;
     }
 
+    // TODO: Spectator
+
     public async Task StartGame(Guid gameGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -60,18 +62,56 @@ public class GameService : IDisposable
     public async Task ProcessDiceRoll(Guid gameGuid, Guid playerGuid)
     {
         GameState game = GetGame(gameGuid);
-        
+
         if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.  current active are: {game.GetCurrentPlayer().Id}");
 
         var result = game.RollDice();
 
-    _logger.LogInformation($"Transaction result ${result.Transaction.Count}");
-        
+        _logger.LogInformation($"Transaction result ${result.Transaction.Count}");
+
         await _eventPublisher.PublishGameActionEvent("DiceRolled", gameGuid, new
+        {
+            PlayerId = playerGuid,
+            RollResult = result
+        });
+    }
+
+
+
+    public async Task EndTurn(Guid gameGuid, Guid playerGuid)
     {
-        PlayerId = playerGuid,
-        RollResult = result
-    });
+        GameState game = GetGame(gameGuid);
+        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+        int nextPlayerIndex = game.EndTurn();
+
+        await _eventPublisher.PublishGameActionEvent("EndTurn", gameGuid, new
+        {
+            NextPlayerIndex = nextPlayerIndex
+        });
+    }
+
+    // Huge risk, use auth later to get the playerGuid
+    public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
+    {
+        GameState game = GetGame(gameGuid);
+
+        int nextPlayerIndex = game.DeclareBankcruptcy(playerGuid);
+
+        await _eventPublisher.PublishGameActionEvent("DeclareBankcruptcy", gameGuid, new
+        {
+            RemovedPlayerGuid = playerGuid,
+            NextPlayerIndex = nextPlayerIndex
+        });
+
+        if (game.ActivePlayers.Count == 1)
+        {
+            await _eventPublisher.PublishGameControlEvent("GameOver", gameGuid, new
+            {
+                WinningPlayerGuid = game.ActivePlayers.First().Id
+            });
+        }
+
     }
 
     public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
@@ -81,7 +121,7 @@ public class GameService : IDisposable
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
         var (propertyGuid, transactions) = game.BuyProperty();
-        
+
         await _eventPublisher.PublishGameActionEvent("PropertyBought", gameGuid, new
         {
             PlayerId = playerGuid,
@@ -96,7 +136,7 @@ public class GameService : IDisposable
         if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
 
         var transactions = game.SellProperty(propertyGuid);
-        
+
         await _eventPublisher.PublishGameActionEvent("PropertySold", gameGuid, new
         {
             PlayerId = playerGuid,
@@ -174,43 +214,21 @@ public class GameService : IDisposable
 
     }
 
-    public async Task EndTurn(Guid gameGuid, Guid playerGuid)
-    {
-        GameState game = GetGame(gameGuid);
-        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
-
-        int nextPlayerIndex = game.EndTurn();
-
-        await _eventPublisher.PublishGameActionEvent("EndTurn", gameGuid, new
-        {
-            NextPlayerIndex = nextPlayerIndex
-        });
-    }
-
-    // Huge risk, use auth later to get the playerGuid
-    public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
+    public async Task InitiateTrade(Guid gameGuid, Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
         GameState game = GetGame(gameGuid);
 
-        int nextPlayerIndex = game.DeclareBankcruptcy(playerGuid);
+        var trade = game.InitiateTrade(initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
-        await _eventPublisher.PublishGameActionEvent("DeclareBankcruptcy", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("InitiateTrade", gameGuid, new
         {
-            RemovedPlayerGuid = playerGuid,
-            NextPlayerIndex = nextPlayerIndex
+            Trade = trade
+            // PropertyGuid = propertyGuid,
+            // Transactions = transactions
         });
 
-        if (game.ActivePlayers.Count == 1)
-        {
-            await _eventPublisher.PublishGameControlEvent("GameOver", gameGuid, new
-            {
-                WinningPlayerGuid = game.ActivePlayers.First().Id
-            });
-        }
-
     }
-
-    // Dispose method for cleanup
+    
     public void Dispose()
     {
         // If we need to dispose of any resources in the future

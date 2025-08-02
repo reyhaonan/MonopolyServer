@@ -14,7 +14,7 @@ public class GameState
     private static readonly Random _random = new Random();
     private int _diceRoll1 { get; set; } = 0;
     private int _diceRoll2 { get; set; } = 0;
-    public int _totalDiceRoll { get; set; } = 0;
+    private int _totalDiceRoll { get; set; } = 0;
     // private GameConfig _gameConfig;
     public int CurrentPlayerIndex { get; private set; } = -1;
     #endregion
@@ -29,7 +29,9 @@ public class GameState
     [JsonInclude]
     public List<Player> ActivePlayers { get; private set; } = [];
     [JsonInclude]
-    public Board Board { get; set; }
+    public Board Board { get; private set; }
+    [JsonInclude]
+    public List<Trade> ActiveTrade { get; private set; } = [];
 
     // public List<string> ChanceDeck { get; set; } // Simplified for now, could be objects
     // public List<string> CommunityChestDeck { get; set; } // Simplified for now, could be objects
@@ -422,7 +424,7 @@ public class GameState
         }
 
         var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
-        var playerStateInfo = new RollResult.PlayerStateInfo(currentPlayer.IsInJail, currentPlayer.CurrentPosition, currentPlayer.JailTurnsRemaining, currentPlayer.Money);
+        var playerStateInfo = new RollResult.PlayerStateInfo(currentPlayer.IsInJail, currentPlayer.CurrentPosition, currentPlayer.JailTurnsRemaining);
 
         ChangeGamePhase(GamePhase.PostLandingActions);
 
@@ -635,8 +637,8 @@ public class GameState
         return TransactionsHistory.CommitTransaction();
 
     }
-    
-    
+
+
     /// <summary>
     /// Generic checking for countryProperty upgrade or downgrade
     /// </summary>
@@ -656,7 +658,7 @@ public class GameState
         if (!Board.NoMortgagedPropertyInGroup(countryProperty.Group)) throw new InvalidOperationException("Cannot upgrade/downgrade because there is a mortgaged property in the group");
 
     }
-    
+
     /// <summary>
     /// Upgrading property
     /// </summary>
@@ -725,7 +727,35 @@ public class GameState
         }
         else throw new InvalidOperationException("Space is not a country");
     }
-
-
     #endregion
+    #region Trade
+    public Trade InitiateTrade(Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        Player initiatorPlayer = GetPlayerById(initiatorGuid) ?? throw new Exception("Invalid initiator player");
+        Player recipientPlayer = GetPlayerById(recipientGuid) ?? throw new Exception("Invalid recipipent player");
+
+        // Verify if property offer is valid(owned by initiator)
+        bool initiatorPropertyIsValid = propertyOffer.All(property => initiatorPlayer.PropertiesOwned.Contains(property));
+        if (!initiatorPropertyIsValid) throw new InvalidOperationException("Property Offer is invalid");
+        // Verify initiator money
+        if (initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator money is invalid");
+
+        // Verify if property counter offer is valid(owned by recipient)
+        bool recipientPropertyIsValid = propertyOffer.All(property => recipientPlayer.PropertiesOwned.Contains(property));
+        if (!recipientPropertyIsValid) throw new InvalidOperationException("Property Counter Offer is invalid");
+
+        // Verify recipient money
+        if (recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient money is invalid");
+
+        // Start trade
+
+        var newTrade = new Trade(initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+
+        ActiveTrade.Add(newTrade);
+
+        return newTrade;
+    }
+    
+    #endregion
+
 }

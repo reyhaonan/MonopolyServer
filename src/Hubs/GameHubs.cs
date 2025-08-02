@@ -22,20 +22,25 @@ public interface IResponse
     Task DeclareBankcruptcyResponse(Guid gameGuid, Guid removedPlayerGuid, int nextPlayerIndex);
 
 
-    // 
+    // Property stuff
     Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
     Task PropertySoldResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
     Task PropertyDowngradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
     Task PropertyUpgradeResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
     Task PropertyMortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
     Task PropertyUnmortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
+
+    // Trading stuff
+    Task InitiateTradeResponse(Guid gameId);
+    Task AcceptTradeResponse(Guid gameId);
+    Task RejectTradeResponse(Guid gameId);
     #endregion
 }
 
 public class GameHubs : Hub<IResponse>
 {
     private readonly GameService _gameService;
-    
+
     private readonly ILogger<GameHubs> _logger;
     public GameHubs(GameService gameService, ILogger<GameHubs> logger)
     {
@@ -83,7 +88,16 @@ public class GameHubs : Hub<IResponse>
     {
         await _gameService.ProcessDiceRoll(gameGuid, playerGuid);
     }
+    public async Task EndTurn(Guid gameGuid, Guid playerGuid)
+    {
+        await _gameService.EndTurn(gameGuid, playerGuid);
+    }
+    public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
+    {
+        await _gameService.DeclareBankcruptcy(gameGuid, playerGuid);
+    }
 
+    // Property stuff
     public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
     {
         await _gameService.BuyProperty(gameGuid, playerGuid);
@@ -108,15 +122,13 @@ public class GameHubs : Hub<IResponse>
     public async Task UnmortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
     {
         await _gameService.UnmortgageProperty(gameGuid, playerGuid, propertyGuid);
-    }        
-    public async Task EndTurn(Guid gameGuid, Guid playerGuid)
-    {
-        await _gameService.EndTurn(gameGuid, playerGuid);
     }
-    public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
+
+    public async Task InitiateTrade(Guid gameGuid, Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
-        await _gameService.DeclareBankcruptcy(gameGuid, playerGuid);
+        await _gameService.InitiateTrade(gameGuid, initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
     }
+    // Trade stuff     
     #endregion
 
 }

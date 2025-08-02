@@ -6,7 +6,7 @@ namespace MonopolyServer.Models;
 public class Trade
 {
     [JsonInclude]
-    public Guid TradeGuid { get; init; }
+    public Guid Id { get; init; }
     [JsonInclude]
     public TradeStatus Status { get; private set; }
     [JsonInclude]
@@ -24,9 +24,9 @@ public class Trade
     [JsonInclude]
     public decimal MoneyFromRecipient{ get; private set; }
 
-    public Trade(Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer)
+    public Trade(Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
-        TradeGuid = Guid.NewGuid();
+        Id = Guid.NewGuid();
 
         InitiatorGuid = initiatorGuid;
 
@@ -35,6 +35,10 @@ public class Trade
         PropertyOffer = propertyOffer;
 
         PropertyCounterOffer = propertyCounterOffer;
+
+        MoneyFromInitiator = moneyFromInitiator;
+
+        MoneyFromRecipient = moneyFromRecipient;
 
         Status = TradeStatus.WaitForApproval;
     }

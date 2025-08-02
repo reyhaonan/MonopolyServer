@@ -17,12 +17,11 @@ public readonly struct RollResult
     // Inner struct for player state after the roll
     [method: JsonConstructor]
     // Inner struct for player state after the roll
-    public readonly struct PlayerStateInfo(bool isInJail, int newPlayerPosition, int newPlayerJailTurnsRemaining, decimal newPlayerMoney)
+    public readonly struct PlayerStateInfo(bool isInJail, int newPlayerPosition, int newPlayerJailTurnsRemaining)
     {
         public bool IsInJail { get; } = isInJail;
         public int NewPlayerPosition { get; } = newPlayerPosition;
         public int NewPlayerJailTurnsRemaining { get; } = newPlayerJailTurnsRemaining;
-        public decimal NewPlayerMoney { get; } = newPlayerMoney;
     }
 
 
