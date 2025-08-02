@@ -494,31 +494,21 @@ public class GameState
 
         if (space is Property property)
         {
-            if (property.OwnerId == null)
+            if (property.OwnerId != null)throw new InvalidOperationException("This property is already owned");
+            
+            if (currentPlayer.Money < property.PurchasePrice) throw new InvalidOperationException("Not enough money to buy this property");
+            
+            TransactionsHistory.StartTransaction();
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Buy, currentPlayer.Id, null, property.PurchasePrice, true), (amount) =>
             {
-                if (currentPlayer.Money >= property.PurchasePrice)
-                {
-                    TransactionsHistory.StartTransaction();
-                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Buy, currentPlayer.Id, null, property.PurchasePrice, true), (amount) =>
-                    {
-                        currentPlayer.DeductMoney(amount);
-                        property.BuyProperty(currentPlayer.Id);
-                        currentPlayer.PropertiesOwned.Add(property.Id);
-                    });
-                    var transactionResult = TransactionsHistory.CommitTransaction();
+                currentPlayer.DeductMoney(amount);
+                property.BuyProperty(currentPlayer.Id);
+                currentPlayer.PropertiesOwned.Add(property.Id);
+            });
+            var transactionResult = TransactionsHistory.CommitTransaction();
 
 
-                    return (property.Id, transactionResult);
-                }
-                else
-                {
-                    throw new InvalidOperationException("Not enough money to buy this property");
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException("This property is already owned");
-            }
+            return (property.Id, transactionResult);
         }
         else
         {
@@ -533,18 +523,26 @@ public class GameState
 
         Player currentPlayer = GetCurrentPlayer();
 
+        // Disallow selling property if its not owned by the player
         if (!property.IsOwnedByPlayer(currentPlayer.Id)) throw new InvalidOperationException($"{currentPlayer.Id} are not permitted to sell this property");
 
         if (property is CountryProperty countryProperty)
         {
-            if (Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id))
-            {
-                var propertyHasAHouse = Board.GetPropertiesInGroup(countryProperty.Group).Find(p => p.CurrentRentStage >= RentStage.OneHouse);
-                if (propertyHasAHouse != null) throw new InvalidOperationException("Cannot sell property when other in the group has house");
-            }
+            // DIsallow selling property if it has houses
+            if (countryProperty.CurrentRentStage != RentStage.Unimproved) throw new InvalidOperationException("Can't sell property with house");
+
+
+            bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
+            bool noHouseInGroup = Board.GetPropertiesInGroup(countryProperty.Group).All(property => property.CurrentRentStage == RentStage.Unimproved);
+
+            // Disallow mortgage if player has a house in a group
+            if (groupIsOwnedByPlayer && !noHouseInGroup) throw new InvalidOperationException("Cannot sell property if other property has house");
         }
+
+        decimal sellValue = property.IsMortgaged ? 0 : property.MortgageValue;
+
         TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Sell, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Sell, null, currentPlayer.Id, sellValue, true), (amount) =>
         {
             property.SellProperty();
 
@@ -555,54 +553,73 @@ public class GameState
         return TransactionsHistory.CommitTransaction();
     }
 
-    private (bool result, CountryProperty countryProperty) CheckUpgradeDowngradePermission(Guid propertyGuid)
+    private void CheckUpgradeDowngradePermission(CountryProperty countryProperty)
     {
-        Property property = Board.GetPropertyById(propertyGuid);
         Player currentPlayer = GetCurrentPlayer();
+
+        if (countryProperty.IsMortgaged) throw new InvalidOperationException("Cannot upgrade/downgrade mortgaged property");
+
+        if (countryProperty.OwnerId != currentPlayer.Id) throw new InvalidOperationException("This player is not permitted to upgrade/downgrade the property");
+
         // Group ownership checks
-        if (property is CountryProperty countryProperty)
-        {
-            bool ownedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
-            bool noMortgagedProperty = Board.NoMortgagedPropertyInGroup(countryProperty.Group);
-            return (ownedByPlayer && noMortgagedProperty, countryProperty);
-        }
-        // TODO: [GameConfig] House spread checks
-        else throw new InvalidOperationException("Space is not a country");
+        if (!Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id)) throw new InvalidOperationException("Cannot perform upgrade/downgrade because the player didnt own this group");
+
+        // Mortgaged property in group checks
+        if (!Board.NoMortgagedPropertyInGroup(countryProperty.Group)) throw new InvalidOperationException("Cannot upgrade/downgrade because there is a mortgaged property in the group");
+
     }
     public List<TransactionInfo> UpgradeProperty(Guid propertyGuid)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
-        var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
-
-        if (!playerCanUpgrade) throw new InvalidOperationException("Cannot perform upgrade for this property");
-
-        Player currentPlayer = GetCurrentPlayer();
-
-        TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseCost, true), (amount) =>
+        
+        Property property = Board.GetPropertyById(propertyGuid);
+        if (property is CountryProperty countryProperty)
         {
-            countryProperty.UpgradeRentStage();
-            currentPlayer.DeductMoney(amount);
-        });
-        return TransactionsHistory.CommitTransaction();
+            // Generic checks for both upgrade/downgrade
+            CheckUpgradeDowngradePermission(countryProperty);
+
+            if (countryProperty.CurrentRentStage == RentStage.Hotel) throw new InvalidOperationException("Cannot upgrade more in this property");
+
+            Player currentPlayer = GetCurrentPlayer();
+
+            TransactionsHistory.StartTransaction();
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseCost, true), (amount) =>
+            {
+                countryProperty.UpgradeRentStage();
+                currentPlayer.DeductMoney(amount);
+            });
+            return TransactionsHistory.CommitTransaction();
+            
+        }
+        else throw new InvalidOperationException("Space is not a country");
+
     }
     public List<TransactionInfo> DowngradeProperty(Guid propertyGuid)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
-        var (playerCanUpgrade, countryProperty) = CheckUpgradeDowngradePermission(propertyGuid);
-
-        if (!playerCanUpgrade) throw new InvalidOperationException("Cannot perform downgrade for this property");
-        Player currentPlayer = GetCurrentPlayer();
-
-        TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Downgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>
+        
+        Property property = Board.GetPropertyById(propertyGuid);
+        if (property is CountryProperty countryProperty)
         {
-            countryProperty.DownGradeRentStage();
-            currentPlayer.AddMoney(amount);
-        });
-        return TransactionsHistory.CommitTransaction();
+            // Generic checks for both upgrade/downgrade
+            CheckUpgradeDowngradePermission(countryProperty);
+
+            if (countryProperty.CurrentRentStage == RentStage.Unimproved) throw new InvalidOperationException("Cannot downgrade more in this property");
+
+            Player currentPlayer = GetCurrentPlayer();
+
+            TransactionsHistory.StartTransaction();
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseSellValue, true), (amount) =>
+            {
+                countryProperty.DownGradeRentStage();
+                currentPlayer.AddMoney(amount);
+            });
+            return TransactionsHistory.CommitTransaction();
+            
+        }
+        else throw new InvalidOperationException("Space is not a country");
     }
     public List<TransactionInfo> MortgageProperty(Guid propertyGuid)
     {
@@ -611,26 +628,32 @@ public class GameState
 
         Property property = Board.GetPropertyById(propertyGuid);
         Player currentPlayer = GetCurrentPlayer();
-        if (property.IsOwnedByPlayer(currentPlayer.Id))
+
+
+        // Disallow mortgage if property is now owned
+        if (!property.IsOwnedByPlayer(currentPlayer.Id)) throw new InvalidOperationException("Property is not owned by this player");
+        
+        if (property is CountryProperty countryProperty)
         {
+            // Disallow mortgage if property has houses
+            if (!countryProperty.CurrentRentStage.Equals(RentStage.Unimproved)) throw new InvalidOperationException("Can't mortgage property with house");
+
+            bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
+            bool noHouseInGroup = Board.GetPropertiesInGroup(countryProperty.Group).All(property => property.CurrentRentStage == RentStage.Unimproved);
+
             // Disallow mortgage if player has a house in a group
-            if (property is CountryProperty countryProperty)
-            {
-                bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
-                bool noHouseInGroup = Board.GetPropertiesInGroup(countryProperty.Group).All(property => property.CurrentRentStage == RentStage.Unimproved);
-
-                if(!groupIsOwnedByPlayer || !noHouseInGroup)throw new InvalidOperationException("Cannot mortgage if other property has house");
-            }
-            TransactionsHistory.StartTransaction();
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Mortgage, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
-            {
-                property.MortgageProperty();
-
-                currentPlayer.AddMoney(amount);
-            });
-            return TransactionsHistory.CommitTransaction();
+            if(groupIsOwnedByPlayer && !noHouseInGroup)throw new InvalidOperationException("Cannot mortgage if other property has house");
         }
-        else throw new InvalidOperationException("Property is not owned by this player");
+
+        TransactionsHistory.StartTransaction();
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Mortgage, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
+        {
+            property.MortgageProperty();
+
+            currentPlayer.AddMoney(amount);
+        });
+
+        return TransactionsHistory.CommitTransaction();
     }
     public List<TransactionInfo> UnmortgageProperty(Guid propertyGuid)
     {
@@ -639,19 +662,22 @@ public class GameState
 
         Property property = Board.GetPropertyById(propertyGuid);
         Player currentPlayer = GetCurrentPlayer();
-        if (property.IsOwnedByPlayer(currentPlayer.Id))
+
+        // Disallow unmortgage if no one own this property
+        if (!property.IsOwnedByPlayer(currentPlayer.Id)) throw new InvalidOperationException("Property is not owned by this player");
+
+        // Disallow unmortgage if its not mortgaged
+        if (!property.IsMortgaged) throw new InvalidOperationException("Property is not mortgaged");
+    
+        TransactionsHistory.StartTransaction();
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Unmortgage, currentPlayer.Id, null, property.UnmortgageCost, true), (amount) =>
         {
-            TransactionsHistory.StartTransaction();
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Unmortgage, currentPlayer.Id, null, property.UnmortgageCost, true), (amount) =>
-            {
-                property.UnmortgageProperty();
+            property.UnmortgageProperty();
 
-                currentPlayer.DeductMoney(amount);
-            });
-            return TransactionsHistory.CommitTransaction();
+            currentPlayer.DeductMoney(amount);
+        });
+        return TransactionsHistory.CommitTransaction();
 
-        }
-        else throw new InvalidOperationException("Property is not owned by this player");
     }
 
 

@@ -54,22 +54,18 @@ public class Property : Space
         OwnerId = playerGuid;
     }
 
-    public virtual void MortgageProperty()
+    public void MortgageProperty()
     {
-        if (OwnerId == null) throw new Exception("Nobody own this...");
         IsMortgaged = true;
     }
 
-    public virtual void UnmortgageProperty()
+    public void UnmortgageProperty()
     {
-        if (OwnerId == null) throw new Exception("Nobody own this...");
         IsMortgaged = false;
     }
 
-    public virtual void SellProperty()
+    public void SellProperty()
     {
-        if (OwnerId == null) throw new Exception("Nobody own this...");
-        if (IsMortgaged) throw new InvalidOperationException("Cannot sell mortgaged property");
         ResetProperty();
     }
 }
