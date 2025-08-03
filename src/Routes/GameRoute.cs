@@ -16,10 +16,16 @@ public class GameRoute
         app.MapPost("/game/create", () =>
         {
             Guid gameGuid = _gameService.CreateNewGame();
-            return gameGuid.ToString();
+            return gameGuid;
         })
            .WithSummary("Get Game")
            .WithDescription("This endpoint returns a game message.");
+
+        app.MapPost("/game/verify", (Guid gameGuid) =>
+        {
+            var game = _gameService.GetGame(gameGuid) ?? throw new Exception("Game doesnt exist");
+            return game.GameId;
+        });
 
     }
 }

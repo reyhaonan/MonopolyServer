@@ -4,6 +4,7 @@ using MonopolyServer.Utils;
 
 namespace MonopolyServer.Models;
 
+using System.Text;
 using Microsoft.Extensions.Logging;
 
 public class GameState
@@ -22,9 +23,6 @@ public class GameState
     #region Public property
     [JsonInclude]
     public Guid GameId { get; init; }
-    // List of all players
-    [JsonInclude]
-    public List<Player> Players { get; private set; } = [];
     // List of all active players(still playing)
     [JsonInclude]
     public List<Player> ActivePlayers { get; private set; } = [];
@@ -61,6 +59,23 @@ public class GameState
         InitializeDecks();
     }
 
+    private const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    /// <summary>
+    /// Generates a random room code of a specified length.
+    /// </summary>
+    /// <param name="length">The desired length of the code.</param>
+    /// <returns>A random string.</returns>
+    public static string Generate(int length = 6)
+    {
+        var stringBuilder = new StringBuilder(length);
+        for (int i = 0; i < length; i++)
+        {
+            stringBuilder.Append(Chars[_random.Next(Chars.Length)]);
+        }
+        return stringBuilder.ToString();
+    }
+
     /// <summary>
     /// Changes the current game phase to a new phase.
     /// </summary>
@@ -79,7 +94,6 @@ public class GameState
     /// <param name="newPlayer">The new player to add to the game</param>
     public void AddPlayer(Player newPlayer)
     {
-        Players.Add(newPlayer);
         // TODO: [GameConfig] Adjust how much money players start the game with
         ActivePlayers.Add(newPlayer);
     }
