@@ -15,15 +15,15 @@ public class GameRoute
 
         app.MapPost("/game/create", () =>
         {
-            Guid gameGuid = _gameService.CreateNewGame();
-            return gameGuid;
+            Guid gameId = _gameService.CreateNewGame();
+            return gameId;
         })
            .WithSummary("Get Game")
            .WithDescription("This endpoint returns a game message.");
 
-        app.MapPost("/game/verify", (Guid gameGuid) =>
+        app.MapPost("/game/verify", (Guid gameId) =>
         {
-            var game = _gameService.GetGame(gameGuid) ?? throw new Exception("Game doesnt exist");
+            var game = _gameService.GetGame(gameId) ?? throw new Exception("Game doesnt exist");
             return game.GameId;
         });
 

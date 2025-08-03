@@ -37,21 +37,21 @@ public class Property : Space
     // <summary>
     // Return false if owner is null
     // </summary>
-    public bool IsOwnedByOtherPlayer(Guid playerGuid)
+    public bool IsOwnedByOtherPlayer(Guid playerId)
     {
         if (OwnerId == null) return false;
-        return !OwnerId.Equals(playerGuid);
+        return !OwnerId.Equals(playerId);
     }
 
-    public bool IsOwnedByPlayer(Guid playerGuid)
+    public bool IsOwnedByPlayer(Guid playerId)
     {
         if (OwnerId == null) return false;
-        return OwnerId.Equals(playerGuid);
+        return OwnerId.Equals(playerId);
     }
 
-    public void BuyProperty(Guid playerGuid)
+    public void BuyProperty(Guid playerId)
     {
-        ChangeOwner(playerGuid);
+        ChangeOwner(playerId);
     }
 
     public void MortgageProperty()
@@ -69,8 +69,8 @@ public class Property : Space
         ResetProperty();
     }
 
-    public void ChangeOwner(Guid newOwnerGuid)
+    public void ChangeOwner(Guid newOwnerId)
     {
-        OwnerId = newOwnerGuid;
+        OwnerId = newOwnerId;
     }
 }

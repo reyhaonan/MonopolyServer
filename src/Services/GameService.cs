@@ -19,12 +19,12 @@ public class GameService
         _loggerFactory = loggerFactory;
     }
 
-    public GameState GetGame(Guid gameGuid)
+    public GameState GetGame(Guid gameId)
     {
         GameState? game;
-        if (!_activeGames.TryGetValue(gameGuid, out game))
+        if (!_activeGames.TryGetValue(gameId, out game))
         {
-            throw new InvalidOperationException($"Game with GUID '{gameGuid}' not found in On Going Games");
+            throw new InvalidOperationException($"Game with GUID '{gameId}' not found in On Going Games");
         }
         return game;
     }
@@ -32,51 +32,51 @@ public class GameService
     public Guid CreateNewGame()
     {
         var newGame = new GameState(_loggerFactory.CreateLogger<GameState>());
-        Guid gameGuid = newGame.GameId;
-        _activeGames.TryAdd(gameGuid, newGame);
+        Guid gameId = newGame.GameId;
+        _activeGames.TryAdd(gameId, newGame);
 
-        return gameGuid;
+        return gameId;
     }
 
 
-    public async Task<Player> AddPlayerToGame(Guid gameGuid, string playerName)
+    public async Task<Player> AddPlayerToGame(Guid gameId, string playerName)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
 
         Player newPlayer = new Player(playerName);
         game.AddPlayer(newPlayer);
 
-        await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameGuid, new { Players = game.ActivePlayers });
+        await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameId, new { Players = game.ActivePlayers });
 
         return newPlayer;
     }
 
     // TODO: Spectator
 
-    public async Task StartGame(Guid gameGuid)
+    public async Task StartGame(Guid gameId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         var newPlayerOrder = game.StartGame();
 
-        await _eventPublisher.PublishGameControlEvent("GameStart", gameGuid, new { NewPlayerOrder = newPlayerOrder });
+        await _eventPublisher.PublishGameControlEvent("GameStart", gameId, new { NewPlayerOrder = newPlayerOrder });
     }
 
     
     // TODO: check player Guid using auth
-    public async Task ProcessDiceRoll(Guid gameGuid, Guid playerGuid)
+    public async Task ProcessDiceRoll(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
 
-        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.  current active are: {game.GetCurrentPlayer().Id}");
+        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.  current active are: {game.GetCurrentPlayer().Id}");
 
         var result = game.RollDice();
 
         _logger.LogInformation($"Transaction result ${result.Transaction.Count}");
 
-        await _eventPublisher.PublishGameActionEvent("DiceRolled", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("DiceRolled", gameId, new
         {
-            PlayerId = playerGuid,
+            PlayerId = playerId,
             RollResult = result
         });
     }
@@ -85,71 +85,71 @@ public class GameService
 
     
     // TODO: check player Guid using auth
-    public async Task EndTurn(Guid gameGuid, Guid playerGuid)
+    public async Task EndTurn(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameGuid);
-        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        GameState game = GetGame(gameId);
+        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         int nextPlayerIndex = game.EndTurn();
 
-        await _eventPublisher.PublishGameActionEvent("EndTurn", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("EndTurn", gameId, new
         {
             NextPlayerIndex = nextPlayerIndex
         });
     }
 
     // TODO: check player Guid using auth
-    public async Task PayToGetOutOfJail(Guid gameGuid, Guid playerGuid)
+    public async Task PayToGetOutOfJail(Guid gameId, Guid playerId)
     {
 
-        GameState game = GetGame(gameGuid);
-        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        GameState game = GetGame(gameId);
+        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         var transactions = game.PayToGetOutOfJail();
 
-        await _eventPublisher.PublishGameActionEvent("PayToGetOutOfJail", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("PayToGetOutOfJail", gameId, new
         {
             Transactions = transactions,
-            PlayerGuid = playerGuid
+            PlayerId = playerId
         });
 
     }
     
     
     // TODO: check player Guid using auth
-    public async Task UseGetOutOfJailCard(Guid gameGuid, Guid playerGuid)
+    public async Task UseGetOutOfJailCard(Guid gameId, Guid playerId)
     {
 
-        GameState game = GetGame(gameGuid);
-        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        GameState game = GetGame(gameId);
+        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         game.UseGetOutOfJailCard();
 
-        await _eventPublisher.PublishGameActionEvent("UseGetOutOfJailCard", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("UseGetOutOfJailCard", gameId, new
         {
-            PlayerGuid = playerGuid
+            PlayerId = playerId
         });
 
     }
 
     // TODO: check player Guid using auth
-    public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
+    public async Task DeclareBankcruptcy(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
 
-        int nextPlayerIndex = game.DeclareBankcruptcy(playerGuid);
+        int nextPlayerIndex = game.DeclareBankcruptcy(playerId);
 
-        await _eventPublisher.PublishGameActionEvent("DeclareBankcruptcy", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("DeclareBankcruptcy", gameId, new
         {
-            RemovedPlayerGuid = playerGuid,
+            RemovedPlayerId = playerId,
             NextPlayerIndex = nextPlayerIndex
         });
 
         if (game.ActivePlayers.Count == 1)
         {
-            await _eventPublisher.PublishGameControlEvent("GameOver", gameGuid, new
+            await _eventPublisher.PublishGameControlEvent("GameOver", gameId, new
             {
-                WinningPlayerGuid = game.ActivePlayers.First().Id
+                WinningPlayerId = game.ActivePlayers.First().Id
             });
         }
 
@@ -157,18 +157,18 @@ public class GameService
   
     
     // TODO: check player Guid using auth
-    public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
+    public async Task BuyProperty(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         Player currentPlayer = game.GetCurrentPlayer();
-        if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
-        var (propertyGuid, transactions) = game.BuyProperty();
+        var (propertyId, transactions) = game.BuyProperty();
 
-        await _eventPublisher.PublishGameActionEvent("PropertyBought", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("PropertyBought", gameId, new
         {
-            PlayerId = playerGuid,
-            PropertyGuid = propertyGuid,
+            PlayerId = playerId,
+            PropertyId = propertyId,
             Transactions = transactions
         });
     }
@@ -176,107 +176,107 @@ public class GameService
     
     
     // TODO: check player Guid using auth
-    public async Task SellProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+    public async Task SellProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         Player currentPlayer = game.GetCurrentPlayer();
-        if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
-        var transactions = game.SellProperty(propertyGuid);
+        var transactions = game.SellProperty(propertyId);
 
-        await _eventPublisher.PublishGameActionEvent("PropertySold", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("PropertySold", gameId, new
         {
-            PlayerId = playerGuid,
-            PropertyGuid = propertyGuid,
+            PlayerId = playerId,
+            PropertyId = propertyId,
             Transactions = transactions
         });
     }
     
 
     // TODO: check player Guid using auth
-    public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+    public async Task UpgradeProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         Player currentPlayer = game.GetCurrentPlayer();
 
-        if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
-        var transactions = game.UpgradeProperty(propertyGuid);
+        var transactions = game.UpgradeProperty(propertyId);
 
-        await _eventPublisher.PublishGameActionEvent("PropertyUpgrade", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("PropertyUpgrade", gameId, new
         {
-            PlayerId = playerGuid,
-            PropertyGuid = propertyGuid,
+            PlayerId = playerId,
+            PropertyId = propertyId,
             Transactions = transactions
         });
 
     }
     
     // TODO: check player Guid using auth
-    public async Task DowngradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+    public async Task DowngradeProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         Player currentPlayer = game.GetCurrentPlayer();
 
-        if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
-        var transactions = game.DowngradeProperty(propertyGuid);
+        var transactions = game.DowngradeProperty(propertyId);
 
-        await _eventPublisher.PublishGameActionEvent("PropertyDowngrade", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("PropertyDowngrade", gameId, new
         {
-            PlayerId = playerGuid,
-            PropertyGuid = propertyGuid,
+            PlayerId = playerId,
+            PropertyId = propertyId,
             Transactions = transactions
         });
 
     }
     
     // TODO: check player Guid using auth
-    public async Task MortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+    public async Task MortgageProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         Player currentPlayer = game.GetCurrentPlayer();
 
-        if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
-        var transactions = game.MortgageProperty(propertyGuid);
+        var transactions = game.MortgageProperty(propertyId);
 
-        await _eventPublisher.PublishGameActionEvent("PropertyMortgage", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("PropertyMortgage", gameId, new
         {
-            PlayerId = playerGuid,
-            PropertyGuid = propertyGuid,
+            PlayerId = playerId,
+            PropertyId = propertyId,
             Transactions = transactions
         });
 
     }
     
     // TODO: check player Guid using auth
-    public async Task UnmortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
+    public async Task UnmortgageProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
         Player currentPlayer = game.GetCurrentPlayer();
 
-        if (!playerGuid.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+        if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
-        var transactions = game.UnmortgageProperty(propertyGuid);
+        var transactions = game.UnmortgageProperty(propertyId);
 
-        await _eventPublisher.PublishGameActionEvent("PropertyUnmortgage", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("PropertyUnmortgage", gameId, new
         {
-            PlayerId = playerGuid,
-            PropertyGuid = propertyGuid,
+            PlayerId = playerId,
+            PropertyId = propertyId,
             Transactions = transactions
         });
 
     }
 
     // TODO: check initiator Guid using auth
-    public async Task InitiateTrade(Guid gameGuid, Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public async Task InitiateTrade(Guid gameId, Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
 
-        var trade = game.InitiateTrade(initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        var trade = game.InitiateTrade(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
-        await _eventPublisher.PublishGameActionEvent("InitiateTrade", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("InitiateTrade", gameId, new
         {
             Trade = trade
         });
@@ -284,15 +284,15 @@ public class GameService
     }
 
     // TODO: check approval Guid using auth
-    public async Task AcceptTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid)
+    public async Task AcceptTrade(Guid gameId, Guid approvalId, Guid tradeId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
 
-        var transactions = game.AcceptTrade(tradeGuid, approvalId);
+        var transactions = game.AcceptTrade(tradeId, approvalId);
 
-        await _eventPublisher.PublishGameActionEvent("AcceptTrade", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("AcceptTrade", gameId, new
         {
-            TradeGuid = tradeGuid,
+            TradeId = tradeId,
             Transactions = transactions
         });
 
@@ -300,26 +300,26 @@ public class GameService
     }
     
     // TODO: check approval Guid using auth
-    public async Task RejectTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid)
+    public async Task RejectTrade(Guid gameId, Guid approvalId, Guid tradeId)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
 
-        game.RejectTrade(tradeGuid, approvalId);
+        game.RejectTrade(tradeId, approvalId);
 
-        await _eventPublisher.PublishGameActionEvent("RejectTrade", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("RejectTrade", gameId, new
         {
-            TradeGuid = tradeGuid
+            TradeId = tradeId
         });
 
     }
 
-    public async Task NegotiateTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public async Task NegotiateTrade(Guid gameId, Guid approvalId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
-        GameState game = GetGame(gameGuid);
+        GameState game = GetGame(gameId);
 
-        Trade trade = game.NegotiateTrade(approvalId, tradeGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        Trade trade = game.NegotiateTrade(approvalId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
-        await _eventPublisher.PublishGameActionEvent("NegotiateTrade", gameGuid, new
+        await _eventPublisher.PublishGameActionEvent("NegotiateTrade", gameId, new
         {
             Trade = trade
         });

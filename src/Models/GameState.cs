@@ -468,9 +468,9 @@ public class GameState
         return NextPlayer();
     }
 
-    public int DeclareBankcruptcy(Guid playerGuid)
+    public int DeclareBankcruptcy(Guid playerId)
     {
-        Player bankcruptPlayer = GetPlayerById(playerGuid) ?? throw new InvalidOperationException("Player not found");
+        Player bankcruptPlayer = GetPlayerById(playerId) ?? throw new InvalidOperationException("Player not found");
 
         foreach (Guid propertyId in bankcruptPlayer.PropertiesOwned)
         {
@@ -495,7 +495,7 @@ public class GameState
     /// Deducts the purchase price from the player's money, sets the property's owner, and adds the property to the player's owned properties.
     /// Changes the game phase from LandingOnSpaceAction to PostLandingActions upon successful purchase.
     /// </summary>
-    /// <returns>propertyGuid, and transaction info</returns>
+    /// <returns>propertyId, and transaction info</returns>
     /// <exception cref="InvalidOperationException"></exception>
     public (Guid, List<TransactionInfo>) BuyProperty()
     {
@@ -535,15 +535,15 @@ public class GameState
     /// <summary>
     /// Sellin
     /// </summary>
-    /// <param name="propertyGuid"></param>
+    /// <param name="propertyId"></param>
     /// <returns>transaction info</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public List<TransactionInfo> SellProperty(Guid propertyGuid)
+    public List<TransactionInfo> SellProperty(Guid propertyId)
     {
         // Action is only available on: [PostLandingActions, PlayerTurnStart]
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
-        Property property = Board.GetPropertyById(propertyGuid);
+        Property property = Board.GetPropertyById(propertyId);
         Player currentPlayer = GetCurrentPlayer();
 
         // Disallow selling property if its not owned by the player
@@ -580,15 +580,15 @@ public class GameState
     /// <summary>
     /// Mortgagin a property
     /// </summary>
-    /// <param name="propertyGuid"></param>
+    /// <param name="propertyId"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public List<TransactionInfo> MortgageProperty(Guid propertyGuid)
+    public List<TransactionInfo> MortgageProperty(Guid propertyId)
     {
 
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
-        Property property = Board.GetPropertyById(propertyGuid);
+        Property property = Board.GetPropertyById(propertyId);
         Player currentPlayer = GetCurrentPlayer();
 
 
@@ -620,15 +620,15 @@ public class GameState
     /// <summary>
     /// Unmortgage(pay money cuh)
     /// </summary>
-    /// <param name="propertyGuid"></param>
+    /// <param name="propertyId"></param>
     /// <returns>Transaction info</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public List<TransactionInfo> UnmortgageProperty(Guid propertyGuid)
+    public List<TransactionInfo> UnmortgageProperty(Guid propertyId)
     {
 
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
-        Property property = Board.GetPropertyById(propertyGuid);
+        Property property = Board.GetPropertyById(propertyId);
         Player currentPlayer = GetCurrentPlayer();
 
         // Disallow unmortgage if no one own this property
@@ -675,16 +675,16 @@ public class GameState
     /// <summary>
     /// Upgrading property
     /// </summary>
-    /// <param name="propertyGuid"></param>
+    /// <param name="propertyId"></param>
     /// <returns>Return list of transactions(though its usually just one)</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public List<TransactionInfo> UpgradeProperty(Guid propertyGuid)
+    public List<TransactionInfo> UpgradeProperty(Guid propertyId)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
 
         Player currentPlayer = GetCurrentPlayer();
-        Property property = Board.GetPropertyById(propertyGuid);
+        Property property = Board.GetPropertyById(propertyId);
         if (property is CountryProperty countryProperty)
         {
             // Generic checks for both upgrade/downgrade
@@ -711,16 +711,16 @@ public class GameState
     /// <summary>
     /// Downgrading the property, player gains money yay
     /// </summary>
-    /// <param name="propertyGuid"></param>
+    /// <param name="propertyId"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public List<TransactionInfo> DowngradeProperty(Guid propertyGuid)
+    public List<TransactionInfo> DowngradeProperty(Guid propertyId)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
         Player currentPlayer = GetCurrentPlayer();
 
-        Property property = Board.GetPropertyById(propertyGuid);
+        Property property = Board.GetPropertyById(propertyId);
         if (property is CountryProperty countryProperty)
         {
             // Generic checks for both upgrade/downgrade
@@ -757,29 +757,29 @@ public class GameState
         // Verify recipient money
         if (recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient money is invalid");
     }
-    public Trade InitiateTrade(Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
-        Player initiatorPlayer = GetPlayerById(initiatorGuid) ?? throw new Exception("Invalid initiator player");
-        Player recipientPlayer = GetPlayerById(recipientGuid) ?? throw new Exception("Invalid recipipent player");
+        Player initiatorPlayer = GetPlayerById(initiatorId) ?? throw new Exception("Invalid initiator player");
+        Player recipientPlayer = GetPlayerById(recipientId) ?? throw new Exception("Invalid recipipent player");
 
         _validateTrade(initiatorPlayer, recipientPlayer, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
         // Start trade
 
-        Trade newTrade = new Trade(initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        Trade newTrade = new Trade(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
         ActiveTrades.Add(newTrade);
 
         return newTrade;
     }
 
-    public List<TransactionInfo> AcceptTrade(Guid tradeGuid, Guid approvalId)
+    public List<TransactionInfo> AcceptTrade(Guid tradeId, Guid approvalId)
     {
-        Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
+        Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
 
         if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
 
-        Player initiatorPlayer = GetPlayerById(trade.InitiatorGuid) ?? throw new Exception("Initiator not found");
-        Player recipientPlayer = GetPlayerById(trade.RecipientGuid) ?? throw new Exception("Recipient not found");
+        Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new Exception("Initiator not found");
+        Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new Exception("Recipient not found");
 
         _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer,trade.MoneyFromInitiator, trade.MoneyFromRecipient);
 
@@ -831,22 +831,22 @@ public class GameState
 
         return TransactionsHistory.CommitTransaction();
     }
-    public void RejectTrade(Guid tradeGuid, Guid approvalId)
+    public void RejectTrade(Guid tradeId, Guid approvalId)
     {
-        Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
+        Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
 
         if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
 
         ActiveTrades.Remove(trade);
     }
-    public Trade NegotiateTrade(Guid approvalId, Guid tradeGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public Trade NegotiateTrade(Guid approvalId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
-        Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
+        Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
 
         if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
 
-        Player initiatorPlayer = GetPlayerById(trade.InitiatorGuid) ?? throw new Exception("Initiator not found");
-        Player recipientPlayer = GetPlayerById(trade.RecipientGuid) ?? throw new Exception("Recipient not found");
+        Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new Exception("Initiator not found");
+        Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new Exception("Recipient not found");
 
         _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer,trade.MoneyFromInitiator, trade.MoneyFromRecipient);
 

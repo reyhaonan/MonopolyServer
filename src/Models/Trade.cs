@@ -10,9 +10,9 @@ public class Trade
     [JsonInclude]
     public TradeStatus Status { get; private set; }
     [JsonInclude]
-    public Guid InitiatorGuid { get; init; }
+    public Guid InitiatorId { get; init; }
     [JsonInclude]
-    public Guid RecipientGuid { get; init; }
+    public Guid RecipientId { get; init; }
 
     [JsonInclude]
     public List<Guid> PropertyOffer { get; private set; }
@@ -28,15 +28,15 @@ public class Trade
     [JsonInclude]
     public Guid ApprovalId { get; private set; }
 
-    public Trade(Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public Trade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
         Id = Guid.NewGuid();
 
-        InitiatorGuid = initiatorGuid;
+        InitiatorId = initiatorId;
 
-        RecipientGuid = recipientGuid;
+        RecipientId = recipientId;
 
-        ApprovalId = recipientGuid;
+        ApprovalId = recipientId;
 
         PropertyOffer = propertyOffer;
 
@@ -61,6 +61,6 @@ public class Trade
 
     private void _flipApprovalId()
     {
-        ApprovalId = ApprovalId == RecipientGuid ? InitiatorGuid : RecipientGuid;
+        ApprovalId = ApprovalId == RecipientId ? InitiatorId : RecipientId;
     }
 }

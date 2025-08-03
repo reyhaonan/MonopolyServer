@@ -62,28 +62,28 @@ public class Board
         return property;
     }
 
-    public List<Property> GetPropertiesByGuidList(List<Guid> propertiesGuid)
+    public List<Property> GetPropertiesByGuidList(List<Guid> propertiesId)
     {
-        return Spaces.OfType<Property>().Where(property => propertiesGuid.Contains(property.Id)).ToList();
+        return Spaces.OfType<Property>().Where(property => propertiesId.Contains(property.Id)).ToList();
     }
 
     public List<CountryProperty> GetPropertiesInGroup(ColorGroup group)
     {
         return Spaces.OfType<CountryProperty>().Where(p => p.Group == group).ToList();
     }
-    public List<UtilityProperty> GetUtilityOwnedByPlayer(Guid playerGuid)
+    public List<UtilityProperty> GetUtilityOwnedByPlayer(Guid playerId)
     {
-        return Spaces.OfType<UtilityProperty>().Where(p => p.OwnerId == playerGuid).ToList();
+        return Spaces.OfType<UtilityProperty>().Where(p => p.OwnerId == playerId).ToList();
     }
-    public List<RailroadProperty> GetRailroadOwnedByPlayer(Guid playerGuid)
+    public List<RailroadProperty> GetRailroadOwnedByPlayer(Guid playerId)
     {
-        return Spaces.OfType<RailroadProperty>().Where(p => p.OwnerId == playerGuid).ToList();
+        return Spaces.OfType<RailroadProperty>().Where(p => p.OwnerId == playerId).ToList();
     }
 
-    public bool GroupIsOwnedByPlayer(ColorGroup group, Guid playerGuid)
+    public bool GroupIsOwnedByPlayer(ColorGroup group, Guid playerId)
     {
         var properties = GetPropertiesInGroup(group);
-        return properties.All(property => property.OwnerId != null && property.OwnerId.Equals(playerGuid));
+        return properties.All(property => property.OwnerId != null && property.OwnerId.Equals(playerId));
     }
     public bool NoMortgagedPropertyInGroup(ColorGroup group)
     {
