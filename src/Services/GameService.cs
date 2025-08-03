@@ -60,6 +60,8 @@ public class GameService
         await _eventPublisher.PublishGameControlEvent("GameStart", gameGuid, new { NewPlayerOrder = newPlayerOrder });
     }
 
+    
+    // TODO: check player Guid using auth
     public async Task ProcessDiceRoll(Guid gameGuid, Guid playerGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -79,6 +81,8 @@ public class GameService
 
 
 
+    
+    // TODO: check player Guid using auth
     public async Task EndTurn(Guid gameGuid, Guid playerGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -92,6 +96,7 @@ public class GameService
         });
     }
 
+    // TODO: check player Guid using auth
     public async Task PayToGetOutOfJail(Guid gameGuid, Guid playerGuid)
     {
 
@@ -107,6 +112,9 @@ public class GameService
         });
 
     }
+    
+    
+    // TODO: check player Guid using auth
     public async Task UseGetOutOfJailCard(Guid gameGuid, Guid playerGuid)
     {
 
@@ -122,7 +130,7 @@ public class GameService
 
     }
 
-    // Huge risk, use auth later to get the playerGuid
+    // TODO: check player Guid using auth
     public async Task DeclareBankcruptcy(Guid gameGuid, Guid playerGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -144,7 +152,9 @@ public class GameService
         }
 
     }
-
+  
+    
+    // TODO: check player Guid using auth
     public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -160,6 +170,10 @@ public class GameService
             Transactions = transactions
         });
     }
+
+    
+    
+    // TODO: check player Guid using auth
     public async Task SellProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -175,7 +189,9 @@ public class GameService
             Transactions = transactions
         });
     }
+    
 
+    // TODO: check player Guid using auth
     public async Task UpgradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -193,6 +209,8 @@ public class GameService
         });
 
     }
+    
+    // TODO: check player Guid using auth
     public async Task DowngradeProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -210,6 +228,8 @@ public class GameService
         });
 
     }
+    
+    // TODO: check player Guid using auth
     public async Task MortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
     {
         GameState game = GetGame(gameGuid);
@@ -227,6 +247,8 @@ public class GameService
         });
 
     }
+    
+    // TODO: check player Guid using auth
     public async Task UnmortgageProperty(Guid gameGuid, Guid playerGuid, Guid propertyGuid)
     {
         GameState game = GetGame(gameGuid);
