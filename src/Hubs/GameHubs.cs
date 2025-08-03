@@ -128,6 +128,14 @@ public class GameHubs : Hub<IResponse>
     {
         await _gameService.InitiateTrade(gameGuid, initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
     }
+    public async Task AcceptTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid)
+    {
+        await _gameService.AcceptTrade(gameGuid, approvalId, tradeGuid);
+    }
+    public async Task RejectTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid)
+    {
+        await _gameService.RejectTrade(gameGuid, approvalId, tradeGuid);
+    }
     // Trade stuff     
     #endregion
 

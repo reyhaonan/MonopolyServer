@@ -214,6 +214,7 @@ public class GameService
 
     }
 
+    // TODO: check initiator Guid using auth
     public async Task InitiateTrade(Guid gameGuid, Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
         GameState game = GetGame(gameGuid);
@@ -225,6 +226,36 @@ public class GameService
             Trade = trade
             // PropertyGuid = propertyGuid,
             // Transactions = transactions
+        });
+
+    }
+
+    // TODO: check approval Guid using auth
+    public async Task AcceptTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid)
+    {
+        GameState game = GetGame(gameGuid);
+
+        var transactions = game.AcceptTrade(tradeGuid, approvalId);
+
+        await _eventPublisher.PublishGameActionEvent("AcceptTrade", gameGuid, new
+        {
+            TradeGuid = tradeGuid,
+            Transactions = transactions
+        });
+
+
+    }
+    
+    // TODO: check approval Guid using auth
+    public async Task RejectTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid)
+    {
+        GameState game = GetGame(gameGuid);
+
+        game.RejectTrade(tradeGuid, approvalId);
+
+        await _eventPublisher.PublishGameActionEvent("RejectTrade", gameGuid, new
+        {
+            TradeGuid = tradeGuid
         });
 
     }

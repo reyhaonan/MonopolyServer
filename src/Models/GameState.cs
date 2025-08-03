@@ -756,7 +756,7 @@ public class GameState
         return newTrade;
     }
 
-    public (Guid, List<TransactionInfo>) AcceptTrade(Guid tradeGuid, Guid approvalId)
+    public List<TransactionInfo> AcceptTrade(Guid tradeGuid, Guid approvalId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
 
@@ -824,17 +824,15 @@ public class GameState
 
         ActiveTrades.Remove(trade);
 
-        return (tradeGuid, TransactionsHistory.CommitTransaction());
+        return TransactionsHistory.CommitTransaction();
     }
-    public Guid RejectTrade(Guid tradeGuid, Guid approvalId)
+    public void RejectTrade(Guid tradeGuid, Guid approvalId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
 
         if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
 
         ActiveTrades.Remove(trade);
-
-        return tradeGuid;
     }
     public void NegotiateTrade(){}
     
