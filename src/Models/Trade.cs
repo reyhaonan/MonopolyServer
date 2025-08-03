@@ -8,8 +8,6 @@ public class Trade
     [JsonInclude]
     public Guid Id { get; init; }
     [JsonInclude]
-    public TradeStatus Status { get; private set; }
-    [JsonInclude]
     public Guid InitiatorId { get; init; }
     [JsonInclude]
     public Guid RecipientId { get; init; }
@@ -45,8 +43,6 @@ public class Trade
         MoneyFromInitiator = moneyFromInitiator;
 
         MoneyFromRecipient = moneyFromRecipient;
-
-        Status = TradeStatus.WaitForApproval;
 
     }
 
