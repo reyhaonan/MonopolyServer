@@ -728,11 +728,8 @@ public class GameState
     }
     #endregion
     #region Trade
-    public Trade InitiateTrade(Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    private void _validateTrade(Player initiatorPlayer, Player recipientPlayer, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
-        Player initiatorPlayer = GetPlayerById(initiatorGuid) ?? throw new Exception("Invalid initiator player");
-        Player recipientPlayer = GetPlayerById(recipientGuid) ?? throw new Exception("Invalid recipipent player");
-
         // Verify if property offer is valid(owned by initiator)
         bool initiatorPropertyIsValid = propertyOffer.All(property => initiatorPlayer.PropertiesOwned.Contains(property));
         if (!initiatorPropertyIsValid) throw new InvalidOperationException("Property Offer is invalid");
@@ -740,12 +737,18 @@ public class GameState
         if (initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator money is invalid");
 
         // Verify if property counter offer is valid(owned by recipient)
-        bool recipientPropertyIsValid = propertyOffer.All(property => recipientPlayer.PropertiesOwned.Contains(property));
+        bool recipientPropertyIsValid = propertyCounterOffer.All(property => recipientPlayer.PropertiesOwned.Contains(property));
         if (!recipientPropertyIsValid) throw new InvalidOperationException("Property Counter Offer is invalid");
 
         // Verify recipient money
         if (recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient money is invalid");
+    }
+    public Trade InitiateTrade(Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        Player initiatorPlayer = GetPlayerById(initiatorGuid) ?? throw new Exception("Invalid initiator player");
+        Player recipientPlayer = GetPlayerById(recipientGuid) ?? throw new Exception("Invalid recipipent player");
 
+        _validateTrade(initiatorPlayer, recipientPlayer, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
         // Start trade
 
         Trade newTrade = new Trade(initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
@@ -764,18 +767,7 @@ public class GameState
         Player initiatorPlayer = GetPlayerById(trade.InitiatorGuid) ?? throw new Exception("Initiator not found");
         Player recipientPlayer = GetPlayerById(trade.RecipientGuid) ?? throw new Exception("Recipient not found");
 
-        // Verify if property offer is valid(owned by initiator)
-        bool initiatorPropertyIsValid = trade.PropertyOffer.All(property => initiatorPlayer.PropertiesOwned.Contains(property));
-        if (!initiatorPropertyIsValid) throw new InvalidOperationException("Property Offer is invalid");
-        // Verify initiator money
-        if (initiatorPlayer.Money < trade.MoneyFromInitiator) throw new InvalidOperationException("Initiator money is invalid");
-
-        // Verify if property counter offer is valid(owned by recipient)
-        bool recipientPropertyIsValid = trade.PropertyOffer.All(property => recipientPlayer.PropertiesOwned.Contains(property));
-        if (!recipientPropertyIsValid) throw new InvalidOperationException("Property Counter Offer is invalid");
-
-        // Verify recipient money
-        if (recipientPlayer.Money < trade.MoneyFromRecipient) throw new InvalidOperationException("Recipient money is invalid");
+        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer,trade.MoneyFromInitiator, trade.MoneyFromRecipient);
 
         // Perform money transfer
         TransactionsHistory.StartTransaction();
@@ -833,7 +825,21 @@ public class GameState
 
         ActiveTrades.Remove(trade);
     }
-    public void NegotiateTrade(){}
+    public Trade NegotiateTrade(Guid approvalId, Guid tradeGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
+
+        if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
+
+        Player initiatorPlayer = GetPlayerById(trade.InitiatorGuid) ?? throw new Exception("Initiator not found");
+        Player recipientPlayer = GetPlayerById(trade.RecipientGuid) ?? throw new Exception("Recipient not found");
+
+        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer,trade.MoneyFromInitiator, trade.MoneyFromRecipient);
+
+        trade.Negotiate(propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+
+        return trade;
+    }
     
     #endregion
 

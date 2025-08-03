@@ -172,6 +172,11 @@ public class KafkaSignalRNotifierService : BackgroundService
                                 var tradeGuid = eventData.GetProperty("TradeGuid").GetGuid();
                                 await _hubContext.Clients.Group(gameId.ToString()).RejectTradeResponse(gameId, tradeGuid);
                             }
+                            else if (eventType == "NegotiateTrade")
+                            {
+                                var trade = eventData.GetProperty("Trade").Deserialize<Trade>() ?? throw new Exception("Trade doesnt exist on NegotiateTrade event");
+                                await _hubContext.Clients.Group(gameId.ToString()).NegotiateTradeResponse(gameId, trade);
+                            }
                             #endregion
                             #endregion
                             else

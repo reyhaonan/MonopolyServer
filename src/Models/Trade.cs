@@ -50,8 +50,16 @@ public class Trade
 
     }
 
+    public void Negotiate(List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        PropertyOffer = propertyOffer;
+        PropertyCounterOffer = propertyCounterOffer;
+        MoneyFromInitiator = moneyFromInitiator;
+        MoneyFromRecipient = moneyFromRecipient;
+        _flipApprovalId();
+    }
 
-    public void FlipApprovalId()
+    private void _flipApprovalId()
     {
         ApprovalId = ApprovalId == RecipientGuid ? InitiatorGuid : RecipientGuid;
     }

@@ -37,6 +37,7 @@ public interface IResponse
     Task InitiateTradeResponse(Guid gameId, Trade trade);
     Task AcceptTradeResponse(Guid gameId, Guid tradeGuid, List<TransactionInfo> transactions);
     Task RejectTradeResponse(Guid gameId, Guid tradeGuid);
+    Task NegotiateTradeResponse(Guid gameId, Trade trade);
     #endregion
 }
 

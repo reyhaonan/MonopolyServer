@@ -310,6 +310,18 @@ public class GameService
         });
 
     }
+
+    public async Task NegotiateTrade(Guid gameGuid, Guid approvalId, Guid tradeGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        GameState game = GetGame(gameGuid);
+
+        Trade trade = game.NegotiateTrade(approvalId, tradeGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+
+        await _eventPublisher.PublishGameActionEvent("NegotiateTrade", gameGuid, new
+        {
+            Trade = trade
+        });
+    }
     
     public void Dispose()
     {
