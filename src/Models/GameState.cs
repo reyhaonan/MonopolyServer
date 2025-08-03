@@ -189,7 +189,7 @@ public class GameState
     /// <summary>
     /// Allows a player to pay $50 to get out of jail immediately.
     /// </summary>
-    public void PayToGetOutOfJail()
+    public List<TransactionInfo> PayToGetOutOfJail()
     {
 
         if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
@@ -215,41 +215,40 @@ public class GameState
             currentPlayer.DeductMoney(amount);
             currentPlayer.FreeFromJail();
         });
-        TransactionsHistory.CommitTransaction();
+
+        ChangeGamePhase(GamePhase.PostLandingActions);
+
+        return TransactionsHistory.CommitTransaction();
     }
 
     /// <summary>
     /// Allows a player to use a "Get Out of Jail Free" card if they have one.
     /// </summary>
-    /// <param name="playerId">The ID of the player who wants to use a Get Out of Jail Free card</param>
     /// <returns>True if the card was used successfully and the player is out of jail, false otherwise</returns>
     /// <exception cref="Exception">Thrown if the player is not in jail or doesn't have a Get Out of Jail Free card</exception>
-    public bool UseGetOutOfJailFreeCard(Guid playerId)
+    public void UseGetOutOfJailCard()
     {
         if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
 
-        Player? player = GetPlayerById(playerId);
+        Player currentPlayer = GetCurrentPlayer();
 
-        if (player == null)
-        {
-            throw new InvalidOperationException("Player not found");
-        }
 
-        if (!player.IsInJail)
+        if (!currentPlayer.IsInJail)
         {
             throw new InvalidOperationException("Player is not in jail");
         }
 
-        if (player.GetOutOfJailFreeCards <= 0)
+        if (currentPlayer.GetOutOfJailFreeCards <= 0)
         {
             throw new InvalidOperationException("Player doesn't have any Get Out of Jail Free cards");
         }
 
         // Use the player's Get Out of Jail Free card
-        player.UseGetOutOfJailFreeCard();
-        player.FreeFromJail();
+        currentPlayer.UseGetOutOfJailFreeCard();
+        currentPlayer.FreeFromJail();
 
-        return true;
+        
+        ChangeGamePhase(GamePhase.PostLandingActions);
     }
     #endregion
 

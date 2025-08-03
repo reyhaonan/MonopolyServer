@@ -100,6 +100,17 @@ public class KafkaSignalRNotifierService : BackgroundService
                                 var nextPlayerIndex = eventData.GetProperty("NextPlayerIndex").GetInt32();
                                 await _hubContext.Clients.Group(gameId.ToString()).DeclareBankcruptcyResponse(gameId, removedPlayerGuid, nextPlayerIndex);
                             }
+                            else if (eventType == "PayToGetOutOfJail")
+                            {
+                                var playerGuid = eventData.GetProperty("PlayerGuid").GetGuid();
+                                var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
+                                await _hubContext.Clients.Group(gameId.ToString()).PayToGetOutOfJailResponse(gameId, playerGuid, transactions);
+                            }
+                            else if (eventType == "UseGetOutOfJailCard")
+                            {
+                                var playerGuid = eventData.GetProperty("PlayerGuid").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).UseGetOutOfJailCardResponse(gameId, playerGuid);
+                            }
                             #region Property event
                             else if (eventType == "PropertyBought")
                             {

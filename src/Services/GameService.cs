@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Transactions;
 using MonopolyServer.Models;
 
 namespace MonopolyServer.Services;
@@ -89,6 +90,36 @@ public class GameService
         {
             NextPlayerIndex = nextPlayerIndex
         });
+    }
+
+    public async Task PayToGetOutOfJail(Guid gameGuid, Guid playerGuid)
+    {
+
+        GameState game = GetGame(gameGuid);
+        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+        var transactions = game.PayToGetOutOfJail();
+
+        await _eventPublisher.PublishGameActionEvent("PayToGetOutOfJail", gameGuid, new
+        {
+            Transactions = transactions,
+            PlayerGuid = playerGuid
+        });
+
+    }
+    public async Task UseGetOutOfJailCard(Guid gameGuid, Guid playerGuid)
+    {
+
+        GameState game = GetGame(gameGuid);
+        if (!playerGuid.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerGuid} are not permitted for this action.");
+
+        game.UseGetOutOfJailCard();
+
+        await _eventPublisher.PublishGameActionEvent("UseGetOutOfJailCard", gameGuid, new
+        {
+            PlayerGuid = playerGuid
+        });
+
     }
 
     // Huge risk, use auth later to get the playerGuid

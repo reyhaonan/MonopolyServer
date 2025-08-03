@@ -20,6 +20,9 @@ public interface IResponse
     Task DiceRolledResponse(Guid gameGuid, Guid playerGuid, RollResult rollResult);
     Task EndTurnResponse(Guid gameGuid, int nextPlayerIndex);
     Task DeclareBankcruptcyResponse(Guid gameGuid, Guid removedPlayerGuid, int nextPlayerIndex);
+    Task PayToGetOutOfJailResponse(Guid gameGuid, Guid playerGuid, List<TransactionInfo> transactions);
+    Task UseGetOutOfJailCardResponse(Guid gameGuid, Guid playerGuid);
+
 
 
     // Property stuff
@@ -96,6 +99,14 @@ public class GameHubs : Hub<IResponse>
     {
         await _gameService.DeclareBankcruptcy(gameGuid, playerGuid);
     }
+    public async Task UseGetOutOfJailCard(Guid gameGuid, Guid playerGuid)
+    {
+        await _gameService.UseGetOutOfJailCard(gameGuid, playerGuid);
+    }
+    public async Task PayToGetOutOfJail(Guid gameGuid, Guid playerGuid)
+    {
+        await _gameService.PayToGetOutOfJail(gameGuid, playerGuid);
+    }
 
     // Property stuff
     public async Task BuyProperty(Guid gameGuid, Guid playerGuid)
@@ -124,6 +135,7 @@ public class GameHubs : Hub<IResponse>
         await _gameService.UnmortgageProperty(gameGuid, playerGuid, propertyGuid);
     }
 
+    // Trade stuff     
     public async Task InitiateTrade(Guid gameGuid, Guid initiatorGuid, Guid recipientGuid, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
         await _gameService.InitiateTrade(gameGuid, initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
@@ -136,7 +148,6 @@ public class GameHubs : Hub<IResponse>
     {
         await _gameService.RejectTrade(gameGuid, approvalId, tradeGuid);
     }
-    // Trade stuff     
     #endregion
 
 }
