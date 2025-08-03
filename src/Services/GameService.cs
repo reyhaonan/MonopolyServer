@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Transactions;
+using MonopolyServer.Enums;
 using MonopolyServer.Models;
 
 namespace MonopolyServer.Services;
@@ -41,6 +42,7 @@ public class GameService
     public async Task<Player> AddPlayerToGame(Guid gameGuid, string playerName)
     {
         GameState game = GetGame(gameGuid);
+        if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
 
         Player newPlayer = new Player(playerName);
         game.AddPlayer(newPlayer);

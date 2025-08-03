@@ -9,7 +9,7 @@ public interface IResponse
 {
     #region Game Control Response
     Task CreateGameResponse(Guid newGameGuid);
-    Task PlayerIdAssignmentResponse(Guid playerGuid, GameState game);
+    Task PlayerIdAssignmentResponse(Guid playerGuid);
     Task JoinGameResponse(Guid gameGuid, List<Player> players);
     Task StartGameResponse(Guid gameGuid, List<Player> newPlayerOrder);
     Task GameEnded(Guid gameGuid);
@@ -73,14 +73,11 @@ public class GameHubs : Hub<IResponse>
     public async Task JoinGame(Guid gameGuid, string playerName)
     {
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, gameGuid.ToString());
-
         Player newPlayer = await _gameService.AddPlayerToGame(gameGuid, playerName);
-
-        GameState joinedGame = _gameService.GetGame(gameGuid);
-
-        await Clients.Caller.PlayerIdAssignmentResponse(newPlayer.Id, joinedGame);
+        
+        await Clients.Caller.PlayerIdAssignmentResponse(newPlayer.Id);
     }
+    // All game is spectate by default
     public async Task SpectateGame(Guid gameGuid)
     {
 
