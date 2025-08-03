@@ -14,6 +14,8 @@ public interface IResponse
     Task StartGameResponse(Guid gameGuid, List<Player> newPlayerOrder);
     Task GameEnded(Guid gameGuid);
     Task GameOverResponse(Guid gameGuid, Guid winningPlayerGuid);
+    Task SpectateGameResponse(GameState game);
+
     #endregion
 
     #region Game Event Response
@@ -78,6 +80,15 @@ public class GameHubs : Hub<IResponse>
         GameState joinedGame = _gameService.GetGame(gameGuid);
 
         await Clients.Caller.PlayerIdAssignmentResponse(newPlayer.Id, joinedGame);
+    }
+    public async Task SpectateGame(Guid gameGuid)
+    {
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameGuid.ToString());
+
+        GameState game = _gameService.GetGame(gameGuid);
+
+        await Clients.Caller.SpectateGameResponse(game);
     }
 
     public async Task StartGame(Guid gameGuid)
