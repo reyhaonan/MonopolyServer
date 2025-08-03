@@ -31,7 +31,7 @@ public class GameState
     [JsonInclude]
     public Board Board { get; private set; }
     [JsonInclude]
-    public List<Trade> ActiveTrade { get; private set; } = [];
+    public List<Trade> ActiveTrades { get; private set; } = [];
 
     // public List<string> ChanceDeck { get; set; } // Simplified for now, could be objects
     // public List<string> CommunityChestDeck { get; set; } // Simplified for now, could be objects
@@ -749,12 +749,94 @@ public class GameState
 
         // Start trade
 
-        var newTrade = new Trade(initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        Trade newTrade = new Trade(initiatorGuid, recipientGuid, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
-        ActiveTrade.Add(newTrade);
+        ActiveTrades.Add(newTrade);
 
         return newTrade;
     }
+
+    public (Guid, List<TransactionInfo>) AcceptTrade(Guid tradeGuid, Guid approvalId)
+    {
+        Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
+
+        if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
+
+        Player initiatorPlayer = GetPlayerById(trade.InitiatorGuid) ?? throw new Exception("Initiator not found");
+        Player recipientPlayer = GetPlayerById(trade.RecipientGuid) ?? throw new Exception("Recipient not found");
+
+        // Verify if property offer is valid(owned by initiator)
+        bool initiatorPropertyIsValid = trade.PropertyOffer.All(property => initiatorPlayer.PropertiesOwned.Contains(property));
+        if (!initiatorPropertyIsValid) throw new InvalidOperationException("Property Offer is invalid");
+        // Verify initiator money
+        if (initiatorPlayer.Money < trade.MoneyFromInitiator) throw new InvalidOperationException("Initiator money is invalid");
+
+        // Verify if property counter offer is valid(owned by recipient)
+        bool recipientPropertyIsValid = trade.PropertyOffer.All(property => recipientPlayer.PropertiesOwned.Contains(property));
+        if (!recipientPropertyIsValid) throw new InvalidOperationException("Property Counter Offer is invalid");
+
+        // Verify recipient money
+        if (recipientPlayer.Money < trade.MoneyFromRecipient) throw new InvalidOperationException("Recipient money is invalid");
+
+        // Perform money transfer
+        TransactionsHistory.StartTransaction();
+        if (trade.MoneyFromInitiator > 0) TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Trade, initiatorPlayer.Id, recipientPlayer.Id, trade.MoneyFromInitiator, false),
+            amount =>
+            {
+                recipientPlayer.AddMoney(amount);
+                initiatorPlayer.DeductMoney(amount);
+            }
+        );
+        if (trade.MoneyFromRecipient > 0) TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Trade, recipientPlayer.Id, initiatorPlayer.Id, trade.MoneyFromRecipient, false),
+            amount =>
+            {
+                initiatorPlayer.AddMoney(amount);
+                recipientPlayer.DeductMoney(amount);
+            }
+        );
+
+        /// Perform property transfer
+
+        // Remove intersected property offer from initiator
+        initiatorPlayer.PropertiesOwned.RemoveAll(pr => trade.PropertyOffer.Contains(pr));
+        // Add property counter offer to initiator
+        initiatorPlayer.PropertiesOwned.AddRange(trade.PropertyCounterOffer);
+
+        // Change each property counter offer OwnerId to initiator Id
+        var PropertyCounterOffer = Board.GetPropertiesByGuidList(trade.PropertyCounterOffer);
+        foreach (Property property in PropertyCounterOffer)
+        {
+            property.ChangeOwner(initiatorPlayer.Id);
+        }
+
+
+        // Remove intersected property counter offer from recipient
+        recipientPlayer.PropertiesOwned.RemoveAll(pr => trade.PropertyCounterOffer.Contains(pr));
+        // Add property offer to recipient
+        recipientPlayer.PropertiesOwned.AddRange(trade.PropertyOffer);
+
+        // Change each property offer OwnerId to recipient Id
+        var PropertyOffer = Board.GetPropertiesByGuidList(trade.PropertyOffer);
+        foreach (Property property in PropertyOffer)
+        {
+            property.ChangeOwner(recipientPlayer.Id);
+        }
+
+        ActiveTrades.Remove(trade);
+
+        return (tradeGuid, TransactionsHistory.CommitTransaction());
+    }
+    public Guid RejectTrade(Guid tradeGuid, Guid approvalId)
+    {
+        Trade trade = ActiveTrades.First(tr => tr.Id == tradeGuid) ?? throw new InvalidOperationException("Invalid trade");
+
+        if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
+
+        ActiveTrades.Remove(trade);
+
+        return tradeGuid;
+    }
+    public void NegotiateTrade(){}
     
     #endregion
 

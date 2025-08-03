@@ -51,7 +51,7 @@ public class Property : Space
 
     public void BuyProperty(Guid playerGuid)
     {
-        OwnerId = playerGuid;
+        ChangeOwner(playerGuid);
     }
 
     public void MortgageProperty()
@@ -67,5 +67,10 @@ public class Property : Space
     public void SellProperty()
     {
         ResetProperty();
+    }
+
+    public void ChangeOwner(Guid newOwnerGuid)
+    {
+        OwnerId = newOwnerGuid;
     }
 }

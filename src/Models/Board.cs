@@ -62,6 +62,11 @@ public class Board
         return property;
     }
 
+    public List<Property> GetPropertiesByGuidList(List<Guid> propertiesGuid)
+    {
+        return Spaces.OfType<Property>().Where(property => propertiesGuid.Contains(property.Id)).ToList();
+    }
+
     public List<CountryProperty> GetPropertiesInGroup(ColorGroup group)
     {
         return Spaces.OfType<CountryProperty>().Where(p => p.Group == group).ToList();
