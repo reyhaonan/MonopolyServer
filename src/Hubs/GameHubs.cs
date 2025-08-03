@@ -31,9 +31,9 @@ public interface IResponse
     Task PropertyUnmortgagedResponse(Guid gameId, Guid buyerId, Guid propertyGuid, List<TransactionInfo> transactions);
 
     // Trading stuff
-    Task InitiateTradeResponse(Guid gameId);
-    Task AcceptTradeResponse(Guid gameId);
-    Task RejectTradeResponse(Guid gameId);
+    Task InitiateTradeResponse(Guid gameId, Trade trade);
+    Task AcceptTradeResponse(Guid gameId, Guid tradeGuid, List<TransactionInfo> transactions);
+    Task RejectTradeResponse(Guid gameId, Guid tradeGuid);
     #endregion
 }
 

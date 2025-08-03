@@ -224,8 +224,6 @@ public class GameService
         await _eventPublisher.PublishGameActionEvent("InitiateTrade", gameGuid, new
         {
             Trade = trade
-            // PropertyGuid = propertyGuid,
-            // Transactions = transactions
         });
 
     }
