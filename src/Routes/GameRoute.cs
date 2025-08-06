@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using MonopolyServer.Services;
 
 namespace MonopolyServer.Routes;
@@ -13,7 +14,7 @@ public class GameRoute
     public void Map(WebApplication app)
     {
 
-        app.MapPost("/game/create", () =>
+        app.MapPost("/game/create", [Authorize] () =>
         {
             Guid gameId = _gameService.CreateNewGame();
             return gameId;

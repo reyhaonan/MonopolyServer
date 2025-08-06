@@ -18,6 +18,7 @@ Console.WriteLine($"AllowedOrigins: {string.Join(", ", AllowedOrigins ?? new str
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<GameRoute>();
+builder.Services.AddSingleton<AuthRoute>();
 
 builder.Services.AddHostedService<KafkaSignalRNotifierService>();
 
@@ -31,6 +32,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHttpClient();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Todo API", Description = "Keep track of your tasks", Version = "v1" });
@@ -48,9 +50,12 @@ app.UseCors("CorsPolicy");
         using (var scope = app.Services.CreateScope())
         {
             var gameRoute = scope.ServiceProvider.GetRequiredService<GameRoute>();
-            Console.WriteLine("Mapping GameRoute...");
+            var authRoute = scope.ServiceProvider.GetRequiredService<AuthRoute>();
+            
             gameRoute.Map(app);
-            Console.WriteLine("GameRoute mapping completed.");
+            authRoute.Map(app);
+
+
         }
 
 
