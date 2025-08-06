@@ -22,10 +22,17 @@ public class GameRoute
            .WithSummary("Get Game")
            .WithDescription("This endpoint returns a game message.");
 
-        app.MapPost("/game/verify", (Guid gameId) =>
+        app.MapPost("/game/verify", (string gameId) =>
         {
-            var game = _gameService.GetGame(gameId) ?? throw new Exception("Game doesnt exist");
-            return game.GameId;
+            try
+            {
+                var game = _gameService.GetGame(Guid.Parse(gameId));
+                return Results.Ok(game.GameId);
+            }
+            catch (InvalidOperationException e)
+            {
+                return Results.NotFound(e.Message);
+            }
         });
 
     }
