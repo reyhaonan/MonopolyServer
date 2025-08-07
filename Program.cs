@@ -5,8 +5,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Text.Json;
+using MonopolyServer.Services.Auth;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SignalR with Newtonsoft.Json to handle polymorphic types
@@ -125,6 +124,7 @@ app.MapGet("/", context =>
 });
 
 
+// https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis?view=aspnetcore-9.0#access-the-dependency-injection-di-container
 using (var scope = app.Services.CreateScope())
 {
     var gameRoute = scope.ServiceProvider.GetRequiredService<GameRoute>();

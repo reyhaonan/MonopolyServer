@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using MonopolyServer.Models;
 using MonopolyServer.Services;
@@ -43,6 +44,7 @@ public interface IResponse
     #endregion
 }
 
+[Authorize]
 public class GameHubs : Hub<IResponse>
 {
     private readonly GameService _gameService;
@@ -74,7 +76,7 @@ public class GameHubs : Hub<IResponse>
     {
 
         Player newPlayer = await _gameService.AddPlayerToGame(gameId, playerName);
-        
+
         await Clients.Caller.PlayerIdAssignmentResponse(newPlayer.Id);
     }
     // All game is spectate by default
