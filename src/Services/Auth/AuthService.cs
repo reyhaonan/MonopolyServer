@@ -60,12 +60,12 @@ public class AuthService
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Key"]));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var csrfToken = GenerateCsrfToken();
+        var xsrfToken = GenerateXsrfToken();
 
         var claims = new Dictionary<string, object>
         {
             [ClaimTypes.Sid] = user,
-            ["xsrf_token"] = csrfToken
+            ["xsrf_token"] = xsrfToken
         };
 
         var descriptor = new SecurityTokenDescriptor
@@ -81,10 +81,10 @@ public class AuthService
         var handler = new JsonWebTokenHandler();
         handler.SetDefaultTimesOnTokenCreation = false;
 
-        return (handler.CreateToken(descriptor), csrfToken);
+        return (handler.CreateToken(descriptor), xsrfToken);
     }
 
-    public static string GenerateCsrfToken(int length = 32)
+    public static string GenerateXsrfToken(int length = 32)
     {
         // Create a byte array to hold the random bytes.
         byte[] tokenBytes = new byte[length];

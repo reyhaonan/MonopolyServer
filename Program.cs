@@ -80,11 +80,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Request.Method == HttpMethods.Put ||
                     context.Request.Method == HttpMethods.Delete)
                 {
-                    string? headerCsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
+                    string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
 
-                    string? jwtCsrfToken = context.Principal.FindFirst("xsrf_token")?.Value;
+                    string? jwtXsrfToken = context.Principal.FindFirst("xsrf_token")?.Value;
 
-                    if (string.IsNullOrEmpty(headerCsrfToken) || string.IsNullOrEmpty(jwtCsrfToken) || headerCsrfToken != jwtCsrfToken)
+                    if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
                     {
                         context.Response.StatusCode = StatusCodes.Status403Forbidden;
                         context.Fail("CSRF token validation failed.");

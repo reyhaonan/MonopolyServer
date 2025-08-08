@@ -26,10 +26,10 @@ public class AuthRoute
 
         app.MapPost("/auth/login", (Guid user, HttpResponse response) =>
         {
-            var (accessToken, csrfToken) = _authService.GenerateToken(user.ToString());
+            var (accessToken, xsrfToken) = _authService.GenerateToken(user.ToString());
 
             response.Cookies.Delete("XSRF-TOKEN");
-            response.Cookies.Append("XSRF-TOKEN", csrfToken, new CookieOptions
+            response.Cookies.Append("XSRF-TOKEN", xsrfToken, new CookieOptions
             {
                 Expires = DateTime.UtcNow.AddMinutes(90),
                 SameSite = SameSiteMode.None,
