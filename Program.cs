@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MonopolyServer.Services.Auth;
+using MonopolyServer.Database;
+using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SignalR with Newtonsoft.Json to handle polymorphic types
@@ -15,6 +17,7 @@ builder.Services.AddSignalR(options =>
 });
 builder.Services.AddEndpointsApiExplorer();
 
+builder.Services.AddDbContext<MonopolyDbContext>();
 
 // Register event publisher
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
