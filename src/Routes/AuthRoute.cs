@@ -66,14 +66,17 @@ public static class AuthRoute
 
         group.MapGet("/me", [Authorize] async (ClaimsPrincipal user) =>
         {
-            return user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid).Value;
+            var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
+
+            return claim.Value;
         });
         group.MapPatch("/refresh", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (ClaimsPrincipal user, HttpResponse response, AuthService authService) =>
         {
-            var id = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid).Value;
+            
+            var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
             
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
-            var accessToken = Helpers.SetAccessTokenCookies(response, authService, id, accessTokenExpiry);
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, claim.Value, accessTokenExpiry);
         });
 
 
