@@ -8,6 +8,7 @@ using System.Text;
 using MonopolyServer.Services.Auth;
 using MonopolyServer.Database;
 using MonopolyServer.Repositories;
+using MonopolyServer.Utils;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SignalR with Newtonsoft.Json to handle polymorphic types
@@ -65,52 +66,30 @@ builder.Services.AddSwaggerGen(c =>
         {jwtSecurityScheme, Array.Empty<string>()}
     });
 });
-//JWT Authentication
+
+// Access Token configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-.AddJwtBearer(options =>
+    .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.Events = new JwtBearerEvents
+        Helpers.ConfigureJwtBearer(options, builder.Configuration);
+        options.Events.OnMessageReceived = context =>
         {
-            OnMessageReceived = context =>
-            {
-                context.Token = context.Request.Cookies["AccessToken"];
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = (context) =>
-            {
-                if (context.Request.Method == HttpMethods.Post ||
-                    context.Request.Method == HttpMethods.Put ||
-                    context.Request.Method == HttpMethods.Delete)
-                {
-                    string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
-
-                    string? jwtXsrfToken = context.Principal.FindFirst("xsrf_token")?.Value;
-
-                    if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        context.Fail("CSRF token validation failed.");
-                        return Task.CompletedTask;
-                    }
-                }
-                return Task.CompletedTask;
-            }
+            context.Token = context.Request.Cookies["AccessToken"];
+            return Task.CompletedTask;
         };
-
-        options.TokenValidationParameters = new TokenValidationParameters
+    })
+    // Refresh Token configuration
+    .AddJwtBearer("RefreshTokenScheme", options =>
+    {
+        Helpers.ConfigureJwtBearer(options, builder.Configuration);
+        options.Events.OnMessageReceived = context =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JWT:Issuer"],
-            ValidAudience = builder.Configuration["JWT:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
+            context.Token = context.Request.Cookies["RefreshToken"];
+            Console.WriteLine($"Authenticating refreshToken ${context.Token}");
+            return Task.CompletedTask;
         };
-    }
-);
+    });
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();

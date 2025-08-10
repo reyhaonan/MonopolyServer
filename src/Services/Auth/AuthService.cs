@@ -113,12 +113,12 @@ public class AuthService
 
         var descriptor = new SecurityTokenDescriptor
         {
-
             Issuer = _config["JWT:Issuer"],
             Audience = _config["JWT:Audience"],
             Claims = claims,
             Expires = expires,
             SigningCredentials = credentials,
+            IssuedAt = DateTime.UtcNow
         };
 
         var handler = new JsonWebTokenHandler();

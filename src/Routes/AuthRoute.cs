@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using MonopolyServer.Database.Enums;
 using MonopolyServer.DTO;
 using MonopolyServer.Services.Auth;
@@ -11,7 +13,7 @@ public static class AuthRoute
     public static void Map(WebApplication app)
     {
         var group = app.MapGroup("/auth");
-        
+
         group.MapPost("/discord", async (AuthRequest req, HttpResponse response, AuthService authService) =>
         {
             var discordTokenResponse = await authService.GetDiscordAccessToken(req.code);
@@ -58,6 +60,11 @@ public static class AuthRoute
                 accessToken,
                 refreshToken
             });
+        });
+
+        group.MapPost("/me", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")]async (ClaimsPrincipal user) =>
+        {
+            return user.Identity;
         });
         
 
