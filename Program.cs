@@ -77,6 +77,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             context.Token = context.Request.Cookies["AccessToken"];
             return Task.CompletedTask;
         };
+        options.Events.OnTokenValidated = (context) =>
+            {
+                if (context.Request.Method == HttpMethods.Post ||
+                    context.Request.Method == HttpMethods.Put ||
+                    context.Request.Method == HttpMethods.Delete)
+                {
+                    string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
+                    string? jwtXsrfToken = context.Principal?.FindFirst("xsrf_token")?.Value;
+
+                    if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        context.Fail("CSRF token validation failed.");
+                        return Task.CompletedTask;
+                    }
+                }
+                return Task.CompletedTask;
+            };
     })
     // Refresh Token configuration
     .AddJwtBearer("RefreshTokenScheme", options =>
@@ -85,7 +103,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Events.OnMessageReceived = context =>
         {
             context.Token = context.Request.Cookies["RefreshToken"];
-            Console.WriteLine($"Authenticating refreshToken ${context.Token}");
             return Task.CompletedTask;
         };
     });

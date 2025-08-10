@@ -64,52 +64,10 @@ public class AuthService
         return JsonSerializer.Deserialize<DiscordAccountResponse>(responseData) ?? throw new Exception("its Empty"); ;
     }
 
-    public (string accessToken, string refreshToken) GenerateAccessAndRefreshToken(Guid userId, HttpResponse response)
-    {
-        var xsrfToken = GenerateXsrfToken();
-
-        var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
-        var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
-
-        var accessToken = GenerateJWT(userId.ToString(), xsrfToken, accessTokenExpiry);
-        var refreshToken = GenerateJWT(userId.ToString(), xsrfToken, refreshTokenExpiry);
-
-        var accessTokenCookieOptions = new CookieOptions
-        {
-            Expires = accessTokenExpiry,
-            SameSite = SameSiteMode.None,
-            Secure = true
-        };
-
-        var refreshTokenCookieOptions = new CookieOptions
-        {
-            Expires = refreshTokenExpiry,
-            HttpOnly = true,
-            SameSite = SameSiteMode.None,
-            Secure = true
-        };
-
-        response.Cookies.Delete("XSRF-TOKEN");
-        response.Cookies.Append("XSRF-TOKEN", xsrfToken, accessTokenCookieOptions);
-
-        response.Cookies.Delete("AccessToken");
-        response.Cookies.Append("AccessToken", accessToken, accessTokenCookieOptions);
-        response.Cookies.Delete("RefreshToken");
-        response.Cookies.Append("RefreshToken", accessToken, refreshTokenCookieOptions);
-
-        return (accessToken, refreshToken);
-    }
-
-    public string GenerateJWT(string user, string xsrfToken, DateTime expires)
+    public string GenerateJWT(Dictionary<string, object> claims, DateTime expires)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Key"]));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var claims = new Dictionary<string, object>
-        {
-            [ClaimTypes.Sid] = user,
-            ["xsrf_token"] = xsrfToken
-        };
 
         var descriptor = new SecurityTokenDescriptor
         {

@@ -25,7 +25,8 @@ public static class AuthRoute
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
-            var (accessToken, refreshToken) = Helpers.SetAuthCookies(response, authService, user.Id.ToString(), accessTokenExpiry, refreshTokenExpiry);
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry);
+            var refreshToken = Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(), refreshTokenExpiry);
 
             return TypedResults.Ok(new
             {
@@ -43,17 +44,18 @@ public static class AuthRoute
                     }).ToList()
                 }
             });
-            // return Results.Ok(authService.GenerateAccessAndRefreshToken(guestId, response));
         });
 
         group.MapPost("/guest", async (string username, HttpResponse response, AuthService authService) =>
         {
             var guestId = new Guid();
-            
+
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
-            var (accessToken, refreshToken) = Helpers.SetAuthCookies(response, authService, guestId.ToString(), accessTokenExpiry, refreshTokenExpiry);
+            
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry);
+            var refreshToken = Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), refreshTokenExpiry);
 
             return Results.Ok(new
             {
@@ -62,11 +64,17 @@ public static class AuthRoute
             });
         });
 
-        group.MapPost("/me", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")]async (ClaimsPrincipal user) =>
+        group.MapGet("/me", [Authorize] async (ClaimsPrincipal user) =>
         {
-            return user.Identity;
+            return user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid).Value;
         });
-        
+        group.MapPatch("/refresh", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (ClaimsPrincipal user, HttpResponse response, AuthService authService) =>
+        {
+            var id = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid).Value;
+            
+            var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, id, accessTokenExpiry);
+        });
 
 
     }

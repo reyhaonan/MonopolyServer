@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -7,23 +8,21 @@ namespace MonopolyServer.Utils;
 
 public static class Helpers
 {
-    public static (string accessToken, string refreshToken) SetAuthCookies(HttpResponse response, AuthService authService, string userId, DateTime accessTokenExpiry, DateTime refreshTokenExpiry)
+    public static string SetAccessTokenCookies(HttpResponse response, AuthService authService, string userId, DateTime accessTokenExpiry)
     {
         var xsrfToken = authService.GenerateXsrfToken();
 
-        var accessToken = authService.GenerateJWT(userId, xsrfToken, accessTokenExpiry);
-        var refreshToken = authService.GenerateJWT(userId, xsrfToken, refreshTokenExpiry);
+        var accessTokenClaims = new Dictionary<string, object>
+        {
+            [ClaimTypes.Sid] = userId,
+            ["xsrf_token"] = xsrfToken
+        };
+
+        var accessToken = authService.GenerateJWT(accessTokenClaims, accessTokenExpiry);
 
         var accessTokenCookieOptions = new CookieOptions
         {
             Expires = accessTokenExpiry,
-            SameSite = SameSiteMode.None,
-            Secure = true
-        };
-
-        var refreshTokenCookieOptions = new CookieOptions
-        {
-            Expires = refreshTokenExpiry,
             HttpOnly = true,
             SameSite = SameSiteMode.None,
             Secure = true
@@ -35,10 +34,29 @@ public static class Helpers
         response.Cookies.Delete("AccessToken");
         response.Cookies.Append("AccessToken", accessToken, accessTokenCookieOptions);
 
+        return accessToken;
+    }
+
+    public static string SetRefreshTokenCookie(HttpResponse response, AuthService authService, string userId, DateTime refreshTokenExpiry)
+    {
+        var refreshTokenClaims = new Dictionary<string, object>
+        {
+            [ClaimTypes.Sid] = userId
+        };
+        var refreshToken = authService.GenerateJWT(refreshTokenClaims, refreshTokenExpiry);
+
+        var refreshTokenCookieOptions = new CookieOptions
+        {
+            Expires = refreshTokenExpiry,
+            HttpOnly = true,
+            SameSite = SameSiteMode.None,
+            Secure = true
+        };
+
         response.Cookies.Delete("RefreshToken");
         response.Cookies.Append("RefreshToken", refreshToken, refreshTokenCookieOptions);
 
-        return (accessToken, refreshToken);
+        return refreshToken;
     }
 
     public static void ConfigureJwtBearer(JwtBearerOptions options, IConfiguration configuration)
@@ -54,27 +72,6 @@ public static class Helpers
             ValidIssuer = configuration["JWT:Issuer"],
             ValidAudience = configuration["JWT:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]))
-        };
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = (context) =>
-            {
-                if (context.Request.Method == HttpMethods.Post ||
-                    context.Request.Method == HttpMethods.Put ||
-                    context.Request.Method == HttpMethods.Delete)
-                {
-                    string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
-                    string? jwtXsrfToken = context.Principal?.FindFirst("xsrf_token")?.Value;
-
-                    if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        context.Fail("CSRF token validation failed.");
-                        return Task.CompletedTask;
-                    }
-                }
-                return Task.CompletedTask;
-            }
         };
     }
 }
