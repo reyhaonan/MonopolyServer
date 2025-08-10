@@ -81,19 +81,21 @@ public class AuthService
             Secure = true
         };
 
+        var refreshTokenCookieOptions = new CookieOptions
+        {
+            Expires = refreshTokenExpiry,
+            HttpOnly = true,
+            SameSite = SameSiteMode.None,
+            Secure = true
+        };
+
         response.Cookies.Delete("XSRF-TOKEN");
         response.Cookies.Append("XSRF-TOKEN", xsrfToken, accessTokenCookieOptions);
 
         response.Cookies.Delete("AccessToken");
         response.Cookies.Append("AccessToken", accessToken, accessTokenCookieOptions);
         response.Cookies.Delete("RefreshToken");
-        response.Cookies.Append("RefreshToken", accessToken, new CookieOptions
-        {
-            Expires = refreshTokenExpiry,
-            HttpOnly = true,
-            SameSite = SameSiteMode.None,
-            Secure = true
-        });
+        response.Cookies.Append("RefreshToken", accessToken, refreshTokenCookieOptions);
 
         return (accessToken, refreshToken);
     }
@@ -125,7 +127,7 @@ public class AuthService
         return handler.CreateToken(descriptor);
     }
 
-    public static string GenerateXsrfToken(int length = 32)
+    public string GenerateXsrfToken(int length = 32)
     {
         // Create a byte array to hold the random bytes.
         byte[] tokenBytes = new byte[length];
