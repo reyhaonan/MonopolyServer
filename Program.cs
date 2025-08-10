@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MonopolyServer.Services.Auth;
 using MonopolyServer.Database;
-using Microsoft.EntityFrameworkCore;
+using MonopolyServer.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SignalR with Newtonsoft.Json to handle polymorphic types
@@ -22,10 +22,11 @@ builder.Services.AddDbContext<MonopolyDbContext>();
 // Register event publisher
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 builder.Services.AddSingleton<GameService>();
-builder.Services.AddScoped<GameRoute>();
-builder.Services.AddScoped<AuthRoute>();
 
 builder.Services.AddScoped<AuthService>();
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserOAuthRepository, UserOAuthRepository>();
 
 builder.Services.AddHostedService<KafkaSignalRNotifierService>();
 
@@ -127,15 +128,8 @@ app.MapGet("/", context =>
 });
 
 
-// https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis?view=aspnetcore-9.0#access-the-dependency-injection-di-container
-using (var scope = app.Services.CreateScope())
-{
-    var gameRoute = scope.ServiceProvider.GetRequiredService<GameRoute>();
-    var authRoute = scope.ServiceProvider.GetRequiredService<AuthRoute>();
-    
-    gameRoute.Map(app);
-    authRoute.Map(app);
-}
+AuthRoute.Map(app);
+GameRoute.Map(app);
 
 
 if (app.Environment.IsDevelopment())

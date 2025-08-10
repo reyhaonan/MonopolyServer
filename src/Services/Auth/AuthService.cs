@@ -4,6 +4,10 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using MonopolyServer.Database;
+using MonopolyServer.Database.Entities;
+using MonopolyServer.Database.Enums;
+using MonopolyServer.Repositories;
 
 namespace MonopolyServer.Services.Auth;
 
@@ -11,17 +15,23 @@ public class AuthService
 {
     private readonly IConfiguration _config;
     private readonly HttpClient _httpClient;
+    private readonly IUserRepository _userRepository;
+    private readonly IUserOAuthRepository _userOAuthRepository;
 
-    public AuthService(IHttpClientFactory httpClientFactory, IConfiguration config)
+    public AuthService(IHttpClientFactory httpClientFactory, IConfiguration config, IUserRepository userRepository, IUserOAuthRepository userOAuthRepository)
     {
         _config = config;
-        
+
         _httpClient = httpClientFactory.CreateClient();
+
+        _userRepository = userRepository;
+        _userOAuthRepository = userOAuthRepository;
+
     }
 
     public async Task<DiscordTokenResponse> GetDiscordAccessToken(string code)
     {
-        
+
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 // ima invalidate this later
@@ -32,12 +42,11 @@ public class AuthService
                 { "redirect_uri", "http://localhost:5173/oauth2" },
                 { "scope", "identify" }
             });
-            var response = await _httpClient.PostAsync("https://discord.com/api/oauth2/token", content);
-            response.EnsureSuccessStatusCode();
-            var tokenResponseData = await response.Content.ReadAsStringAsync();
-            
-            Console.WriteLine($"BABABOOOEY2 {tokenResponseData}");
-            return JsonSerializer.Deserialize<DiscordTokenResponse>(tokenResponseData) ?? throw new Exception("its Empty");
+        var response = await _httpClient.PostAsync("https://discord.com/api/oauth2/token", content);
+        response.EnsureSuccessStatusCode();
+        var tokenResponseData = await response.Content.ReadAsStringAsync();
+
+        return JsonSerializer.Deserialize<DiscordTokenResponse>(tokenResponseData) ?? throw new Exception("its Empty");
     }
 
     public async Task<DiscordAccountResponse> GetDiscordAccountInfo(string authorizationHeader)
@@ -52,15 +61,47 @@ public class AuthService
 
         var responseData = await response.Content.ReadAsStringAsync();
 
-        return JsonSerializer.Deserialize<DiscordAccountResponse>(responseData) ?? throw new Exception("its Empty");;
+        return JsonSerializer.Deserialize<DiscordAccountResponse>(responseData) ?? throw new Exception("its Empty"); ;
     }
 
-    public (string, string) GenerateToken(string user)
+    public (string accessToken, string refreshToken) GenerateAccessAndRefreshToken(Guid userId, HttpResponse response)
+    {
+        var xsrfToken = GenerateXsrfToken();
+
+        var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
+        var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+
+        var accessToken = GenerateJWT(userId.ToString(), xsrfToken, accessTokenExpiry);
+        var refreshToken = GenerateJWT(userId.ToString(), xsrfToken, refreshTokenExpiry);
+
+        var accessTokenCookieOptions = new CookieOptions
+        {
+            Expires = accessTokenExpiry,
+            SameSite = SameSiteMode.None,
+            Secure = true
+        };
+
+        response.Cookies.Delete("XSRF-TOKEN");
+        response.Cookies.Append("XSRF-TOKEN", xsrfToken, accessTokenCookieOptions);
+
+        response.Cookies.Delete("AccessToken");
+        response.Cookies.Append("AccessToken", accessToken, accessTokenCookieOptions);
+        response.Cookies.Delete("RefreshToken");
+        response.Cookies.Append("RefreshToken", accessToken, new CookieOptions
+        {
+            Expires = refreshTokenExpiry,
+            HttpOnly = true,
+            SameSite = SameSiteMode.None,
+            Secure = true
+        });
+
+        return (accessToken, refreshToken);
+    }
+
+    public string GenerateJWT(string user, string xsrfToken, DateTime expires)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Key"]));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var xsrfToken = GenerateXsrfToken();
 
         var claims = new Dictionary<string, object>
         {
@@ -74,14 +115,14 @@ public class AuthService
             Issuer = _config["JWT:Issuer"],
             Audience = _config["JWT:Audience"],
             Claims = claims,
-            Expires = DateTime.UtcNow.AddMinutes(120),
+            Expires = expires,
             SigningCredentials = credentials,
         };
 
         var handler = new JsonWebTokenHandler();
         handler.SetDefaultTimesOnTokenCreation = false;
 
-        return (handler.CreateToken(descriptor), xsrfToken);
+        return handler.CreateToken(descriptor);
     }
 
     public static string GenerateXsrfToken(int length = 32)
@@ -104,5 +145,27 @@ public class AuthService
         }
 
         return sb.ToString();
+    }
+
+    public async Task<User> GetOrStoreData(ProviderName providerName, string id)
+    {
+        var existingOAuth = await _userOAuthRepository.GetByProviderNameAndId(providerName, id);
+        if (existingOAuth != null) return existingOAuth.User;
+
+        Console.WriteLine($"KKKKKK Creating new User");
+        var newOAuth = await _userOAuthRepository.Create(new UserOAuth
+        {
+            OAuthID = id,
+            ProviderName = providerName,
+        });
+
+        var newUser = await _userRepository.Create(new User
+        {
+            Username = new Guid().ToString()
+        });
+
+        await _userOAuthRepository.UpdateUserId(newOAuth.Id, newUser.Id);
+
+        return newUser;
     }
 }

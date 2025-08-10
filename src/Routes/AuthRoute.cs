@@ -1,50 +1,52 @@
 using System.Text.Json;
+using MonopolyServer.Database.Enums;
+using MonopolyServer.DTO;
 using MonopolyServer.Services.Auth;
 
 namespace MonopolyServer.Routes;
 
-public class AuthRoute
+public static class AuthRoute
 {
-    private readonly HttpClient _httpClient;
-    private readonly AuthService _authService;
-    public AuthRoute(IHttpClientFactory httpClientFactory, AuthService authService)
-    {
-        _httpClient = httpClientFactory.CreateClient();
-        _authService = authService;
-    }
-    public void Map(WebApplication app)
+    public static void Map(WebApplication app)
     {
 
-        app.MapPost("/oauth2/discord", async (AuthRequest req) =>
+        app.MapPost("/oauth2/discord", async (AuthRequest req, HttpResponse response, AuthService authService) =>
         {
-            var discordTokenResponse = await _authService.GetDiscordAccessToken(req.code);
+            // TODO: Generate token
+            var discordTokenResponse = await authService.GetDiscordAccessToken(req.code);
 
-            var discordResponse = await _authService.GetDiscordAccountInfo($"{discordTokenResponse.token_type} {discordTokenResponse.access_token}");
-            
-            return discordResponse;
+            var discordResponse = await authService.GetDiscordAccountInfo($"{discordTokenResponse.token_type} {discordTokenResponse.access_token}");
+
+            var user = await authService.GetOrStoreData(ProviderName.Discord,discordResponse.id);
+
+            return TypedResults.Ok(new UserDTO
+            {
+                Id = user.Id,
+                Username = user.Username,
+                OAuth = user.OAuth.Select(o => new UserOAuthDTO
+                {
+                    Id = o.Id,
+                    OAuthID = o.OAuthID,
+                    ProviderName = o.ProviderName.ToString()
+                }).ToList()
+            });
+            // return Results.Ok(authService.GenerateAccessAndRefreshToken(guestId, response));
         });
 
-        app.MapPost("/auth/login", (Guid user, HttpResponse response) =>
+        app.MapPost("/auth/guest", async (string username, HttpResponse response, AuthService authService) =>
         {
-            var (accessToken, xsrfToken) = _authService.GenerateToken(user.ToString());
+            var guestId = new Guid();
 
-            response.Cookies.Delete("XSRF-TOKEN");
-            response.Cookies.Append("XSRF-TOKEN", xsrfToken, new CookieOptions
+            var (accessToken, refreshToken) = authService.GenerateAccessAndRefreshToken(guestId, response);
+
+            return Results.Ok(new
             {
-                Expires = DateTime.UtcNow.AddMinutes(90),
-                SameSite = SameSiteMode.None,
-                Secure = true
+                accessToken,
+                refreshToken
             });
-            response.Cookies.Delete("AccessToken");
-            response.Cookies.Append("AccessToken", accessToken, new CookieOptions
-            {
-                Expires = DateTime.UtcNow.AddMinutes(90),
-                HttpOnly = true,
-                SameSite = SameSiteMode.None,
-                Secure = true
-            });
-            return accessToken;
         });
+        
+
 
     }
     

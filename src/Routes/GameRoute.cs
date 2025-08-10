@@ -4,29 +4,24 @@ using MonopolyServer.Services;
 namespace MonopolyServer.Routes;
 
 
-public class GameRoute
+public static class GameRoute
 {
-    private readonly GameService _gameService;
-    public GameRoute(GameService gameService)
+    public static void Map(WebApplication app)
     {
-        _gameService = gameService;
-    }
-    public void Map(WebApplication app)
-    {
-
-        app.MapPost("/game/create", [Authorize] () =>
+        var group = app.MapGroup("/game");
+        group.MapPost("/create", [Authorize] (GameService gameService) =>
         {
-            Guid gameId = _gameService.CreateNewGame();
+            Guid gameId = gameService.CreateNewGame();
             return gameId;
         })
            .WithSummary("Get Game")
            .WithDescription("This endpoint returns a game message.");
 
-        app.MapPost("/game/verify", (string gameId) =>
+        group.MapPost("/verify", (string gameId, GameService gameService) =>
         {
             try
             {
-                var game = _gameService.GetGame(Guid.Parse(gameId));
+                var game = gameService.GetGame(Guid.Parse(gameId));
                 return Results.Ok(game.GameId);
             }
             catch (InvalidOperationException e)

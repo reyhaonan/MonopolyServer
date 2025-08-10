@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MonopolyServer.Database;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MonopolyServer.Migrations
 {
     [DbContext(typeof(MonopolyDbContext))]
-    partial class MonopolyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250809041418_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +25,7 @@ namespace MonopolyServer.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("MonopolyServer.Database.Entities.User", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entity.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,22 +33,18 @@ namespace MonopolyServer.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("MonopolyServer.Database.Entities.UserOAuth", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entity.UserOAuth", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<string>("OAuthID")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("ProviderName")
                         .IsRequired()
@@ -58,22 +57,19 @@ namespace MonopolyServer.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("ProviderName", "OAuthID")
-                        .IsUnique();
-
                     b.ToTable("UserOAuth");
                 });
 
-            modelBuilder.Entity("MonopolyServer.Database.Entities.UserOAuth", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entity.UserOAuth", b =>
                 {
-                    b.HasOne("MonopolyServer.Database.Entities.User", "User")
+                    b.HasOne("MonopolyServer.Database.Entity.User", "User")
                         .WithMany("OAuth")
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MonopolyServer.Database.Entities.User", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entity.User", b =>
                 {
                     b.Navigation("OAuth");
                 });
