@@ -107,12 +107,11 @@ public class AuthService
         return sb.ToString();
     }
 
-    public async Task<User> GetOrStoreData(ProviderName providerName, string id)
+    public async Task<User> GetOrStoreData(ProviderName providerName, string id, string username)
     {
         var existingOAuth = await _userOAuthRepository.GetByProviderNameAndId(providerName, id);
         if (existingOAuth != null) return existingOAuth.User;
 
-        Console.WriteLine($"KKKKKK Creating new User");
         var newOAuth = await _userOAuthRepository.Create(new UserOAuth
         {
             OAuthID = id,
@@ -121,7 +120,7 @@ public class AuthService
 
         var newUser = await _userRepository.Create(new User
         {
-            Username = new Guid().ToString()
+            Username = username
         });
 
         await _userOAuthRepository.UpdateUserId(newOAuth.Id, newUser.Id);
