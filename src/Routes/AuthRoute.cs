@@ -72,7 +72,7 @@ public static class AuthRoute
         });
         group.MapPatch("/refresh", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (ClaimsPrincipal user, HttpResponse response, AuthService authService) =>
         {
-            
+            if (user.Claims == null) throw new InvalidOperationException("Why");
             var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
             
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);

@@ -72,12 +72,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         Helpers.ConfigureJwtBearer(options, builder.Configuration);
-        options.Events.OnMessageReceived = context =>
+        options.Events = new JwtBearerEvents
         {
-            context.Token = context.Request.Cookies["AccessToken"];
-            return Task.CompletedTask;
-        };
-        options.Events.OnTokenValidated = (context) =>
+            OnMessageReceived = context =>
+            {
+                Console.WriteLine("Validating access token");
+                
+                context.Token = context.Request.Cookies["AccessToken"];
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = (context) =>
             {
                 if (context.Request.Method == HttpMethods.Post ||
                     context.Request.Method == HttpMethods.Put ||
@@ -94,16 +98,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     }
                 }
                 return Task.CompletedTask;
-            };
+            }
+        }; 
     })
     // Refresh Token configuration
     .AddJwtBearer("RefreshTokenScheme", options =>
     {
         Helpers.ConfigureJwtBearer(options, builder.Configuration);
-        options.Events.OnMessageReceived = context =>
+        options.Events = new JwtBearerEvents
         {
-            context.Token = context.Request.Cookies["RefreshToken"];
-            return Task.CompletedTask;
+            OnMessageReceived = context =>
+            {
+                context.Token = context.Request.Cookies["RefreshToken"];;
+                return Task.CompletedTask;
+            }
         };
     });
 
