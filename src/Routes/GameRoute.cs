@@ -11,6 +11,7 @@ public static class GameRoute
         var group = app.MapGroup("/game");
         group.MapPost("/create", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (GameService gameService) =>
         {
+            Console.WriteLine("Creating game");
             Guid gameId = gameService.CreateNewGame();
             return gameId;
         })

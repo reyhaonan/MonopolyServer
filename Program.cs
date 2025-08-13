@@ -9,6 +9,10 @@ using MonopolyServer.Services.Auth;
 using MonopolyServer.Database;
 using MonopolyServer.Repositories;
 using MonopolyServer.Utils;
+using Confluent.Kafka;
+using Microsoft.AspNetCore.Http.HttpResults;
+using System.Net;
+using Microsoft.AspNetCore.Mvc;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SignalR with Newtonsoft.Json to handle polymorphic types
@@ -77,28 +81,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             OnMessageReceived = context =>
             {
                 Console.WriteLine("Validating access token");
-                
+
                 context.Token = context.Request.Cookies["AccessToken"];
                 return Task.CompletedTask;
             },
-            OnTokenValidated = (context) =>
-            {
-                if (context.Request.Method == HttpMethods.Post ||
-                    context.Request.Method == HttpMethods.Put ||
-                    context.Request.Method == HttpMethods.Delete)
-                {
-                    string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
-                    string? jwtXsrfToken = context.Principal?.FindFirst("xsrf_token")?.Value;
-
-                    if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        context.Fail("CSRF token validation failed.");
-                        return Task.CompletedTask;
-                    }
-                }
-                return Task.CompletedTask;
-            }
         }; 
     })
     // Refresh Token configuration
@@ -115,6 +101,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -123,6 +111,27 @@ app.UseRouting();
 
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
+
+app.Use((context, next) =>
+{
+    //  XSRF-TOKEN Checks if authenticated and has access token
+    if (context.User.Identity.IsAuthenticated && context.Request.Cookies["AccessToken"] != null)
+    {
+        if (context.Request.Method == HttpMethods.Post || context.Request.Method == HttpMethods.Put || context.Request.Method == HttpMethods.Delete)
+        {
+            string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
+            string? jwtXsrfToken = context.User.Claims?.FirstOrDefault(c => c.Type == "xsrf_token")?.Value;
+
+            if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            }
+        }
+    }
+    return next(context);
+});
+
 app.UseAuthorization();
 app.MapHub<GameHubs>("/gameHubs");
 app.MapGet("/", context =>

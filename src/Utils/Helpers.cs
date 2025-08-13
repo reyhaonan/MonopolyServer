@@ -29,7 +29,12 @@ public static class Helpers
         };
 
         response.Cookies.Delete("XSRF-TOKEN");
-        response.Cookies.Append("XSRF-TOKEN", xsrfToken, accessTokenCookieOptions);
+        response.Cookies.Append("XSRF-TOKEN", xsrfToken, new CookieOptions
+        {
+            Expires = accessTokenExpiry,
+            SameSite = SameSiteMode.None,
+            Secure = true
+        });
 
         response.Cookies.Delete("AccessToken");
         response.Cookies.Append("AccessToken", accessToken, accessTokenCookieOptions);

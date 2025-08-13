@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using MonopolyServer.Models;
@@ -82,6 +83,9 @@ public class GameHubs : Hub<IResponse>
     // All game is spectate by default
     public async Task SpectateGame(Guid gameId)
     {
+        var b = Context.User.Claims.FirstOrDefault(e => e.Type == ClaimTypes.Sid);
+
+        if (b != null) Console.WriteLine(b.Value);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
 
