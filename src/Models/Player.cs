@@ -26,9 +26,9 @@ public class Player
     [JsonInclude]
     public bool IsBankrupt { get; private set; }
 
-    public Player(string name)
+    public Player(string name, Guid id)
     {
-        Id = Guid.NewGuid();
+        Id = id;
         Name = name;
         Money = 1500;
         CurrentPosition = 0;

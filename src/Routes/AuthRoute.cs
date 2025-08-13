@@ -59,7 +59,11 @@ public static class AuthRoute
 
             return TypedResults.Ok(new
             {
-                GuestId = guestId,
+                User = new UserDTO
+                {
+                    Id = guestId,
+                    Username = username,
+                },
                 AccessToken = accessToken,
                 RefreshToken = refreshToken
             });

@@ -72,12 +72,12 @@ public class GameHubs : Hub<IResponse>
     }
 
     #region Game Control
-    public async Task JoinGame(Guid gameId, string playerName)
+    // Use 
+    public async Task JoinGame(Guid gameId, string playerName, Guid newPlayerGuid)
     {
 
-        Player newPlayer = await _gameService.AddPlayerToGame(gameId, playerName);
+        await _gameService.AddPlayerToGame(gameId, playerName, newPlayerGuid);
 
-        await Clients.Caller.PlayerIdAssignmentResponse(newPlayer.Id);
     }
     // All game is spectate by default
     public async Task SpectateGame(Guid gameId)
