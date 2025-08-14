@@ -15,7 +15,6 @@ public static class Helpers
         var accessTokenClaims = new Dictionary<string, object>
         {
             [ClaimTypes.Sid] = userId,
-            ["xsrf_token"] = xsrfToken
         };
 
         var accessToken = authService.GenerateJWT(accessTokenClaims, accessTokenExpiry);

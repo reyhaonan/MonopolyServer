@@ -120,11 +120,12 @@ app.Use((context, next) =>
         if (context.Request.Method == HttpMethods.Post || context.Request.Method == HttpMethods.Put || context.Request.Method == HttpMethods.Delete)
         {
             string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
-            string? jwtXsrfToken = context.User.Claims?.FirstOrDefault(c => c.Type == "xsrf_token")?.Value;
+            string? jwtXsrfToken = context.Request.Cookies.FirstOrDefault(e => e.Key == "XSRF-TOKEN").Value;
 
             if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.WriteAsync("Invalid XSRF token");
                 return Task.CompletedTask;
             }
         }

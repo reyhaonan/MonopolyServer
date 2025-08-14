@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using MonopolyServer.Database.Enums;
 using MonopolyServer.DTO;
@@ -25,13 +24,11 @@ public static class AuthRoute
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
-            var accessToken = Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry);
-            var refreshToken = Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(), refreshTokenExpiry);
+            Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry);
+            Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(), refreshTokenExpiry);
 
             return TypedResults.Ok(new
             {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
                 User = new UserDTO
                 {
                     Id = user.Id,
@@ -54,8 +51,8 @@ public static class AuthRoute
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
             
-            var accessToken = Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry);
-            var refreshToken = Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), refreshTokenExpiry);
+            Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry);
+            Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), refreshTokenExpiry);
 
             return TypedResults.Ok(new
             {
@@ -64,8 +61,6 @@ public static class AuthRoute
                     Id = guestId,
                     Username = username,
                 },
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
             });
         });
 
