@@ -57,6 +57,13 @@ public class GameHubs : Hub<IResponse>
         _logger = logger;
     }
 
+    private string GetPlayerId()
+    {
+        if (Context.User == null) throw new Exception("No user found");
+        var player = Context.User.Claims.FirstOrDefault(e => e.Type == ClaimTypes.Sid) ?? throw new Exception("No user id found");
+        return player.Value;
+    }
+
     public override async Task OnConnectedAsync()
     {
 
@@ -76,16 +83,14 @@ public class GameHubs : Hub<IResponse>
     // Use 
     public async Task JoinGame(Guid gameId, string playerName, Guid newPlayerGuid)
     {
-
         await _gameService.AddPlayerToGame(gameId, playerName, newPlayerGuid);
 
     }
     // All game is spectate by default
     public async Task SpectateGame(Guid gameId)
     {
-        var b = Context.User.Claims.FirstOrDefault(e => e.Type == ClaimTypes.Sid);
-
-        if (b != null) Console.WriteLine(b.Value);
+        var b = GetPlayerId();
+        _logger.LogInformation($"BBB {b}");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
 

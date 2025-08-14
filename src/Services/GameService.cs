@@ -39,12 +39,12 @@ public class GameService
     }
 
 
-    public async Task<Player> AddPlayerToGame(Guid gameId, string playerName, Guid newPlayerGuid)
+    public async Task<Player> AddPlayerToGame(Guid gameId, string playerName, Guid newPlayerId)
     {
         GameState game = GetGame(gameId);
         if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
-
-        Player newPlayer = new Player(playerName, newPlayerGuid);
+        if (game.ActivePlayers.Any(p => p.Id == newPlayerId)) throw new InvalidOperationException("Player already joined the game");
+        Player newPlayer = new Player(playerName, newPlayerId);
         game.AddPlayer(newPlayer);
 
         await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameId, new { Players = game.ActivePlayers });
