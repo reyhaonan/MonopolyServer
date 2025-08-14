@@ -90,9 +90,9 @@ public class GameHubs : Hub<IResponse>
     // All game is spectate by default
     public async Task SpectateGame(Guid gameId)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
-
         GameState game = _gameService.GetGame(gameId);
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
 
         await Clients.Caller.SpectateGameResponse(game);
     }

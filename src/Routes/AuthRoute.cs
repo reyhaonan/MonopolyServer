@@ -64,7 +64,7 @@ public static class AuthRoute
             });
         });
 
-        group.MapGet("/me", [Authorize] async (ClaimsPrincipal user) =>
+        group.MapGet("/me", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (ClaimsPrincipal user) =>
         {
             var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
 
@@ -80,7 +80,7 @@ public static class AuthRoute
 
             return Results.Ok(accessToken);
         });
-        group.MapPost("/logout", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")][Authorize] async (HttpResponse response) =>
+        group.MapPost("/logout", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (HttpResponse response) =>
         {
             response.Cookies.Delete("XSRF-TOKEN");
             response.Cookies.Delete("AccessToken");

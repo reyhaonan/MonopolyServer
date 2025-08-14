@@ -1,4 +1,5 @@
 using MonopolyServer.GameHubs;
+using Microsoft.AspNetCore.Authorization;
 using MonopolyServer.Services;
 using MonopolyServer.Routes;
 using Microsoft.OpenApi.Models;
@@ -13,6 +14,8 @@ using Confluent.Kafka;
 using Microsoft.AspNetCore.Http.HttpResults;
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SignalR with Newtonsoft.Json to handle polymorphic types
@@ -80,8 +83,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = context =>
             {
-                Console.WriteLine("Validating access token");
-
                 context.Token = context.Request.Cookies["AccessToken"];
                 return Task.CompletedTask;
             },
@@ -112,11 +113,16 @@ app.UseRouting();
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 
-app.Use((context, next) =>
-{
-    //  XSRF-TOKEN Checks if authenticated and has access token
-    if (context.User.Identity.IsAuthenticated && context.Request.Cookies["AccessToken"] != null)
+app.Use((context, next) => {
+
+    var endpoint = context.GetEndpoint();
+
+    var scheme = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.AuthenticationSchemes;
+    var typeId = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.TypeId;
+    //  XSRF-TOKEN Checks if authenticated and auth scheme used is default
+    if (scheme != "RefreshTokenScheme" && typeId != null)
     {
+        Console.WriteLine($"EH {scheme}");
         if (context.Request.Method == HttpMethods.Post || context.Request.Method == HttpMethods.Put || context.Request.Method == HttpMethods.Delete)
         {
             string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
@@ -133,8 +139,11 @@ app.Use((context, next) =>
     return next(context);
 });
 
-app.UseAuthorization();
 app.MapHub<GameHubs>("/gameHubs");
+AuthRoute.Map(app);
+GameRoute.Map(app);
+
+app.UseAuthorization();
 app.MapGet("/", context =>
 {
     context.Response.Redirect("/swagger");
@@ -142,8 +151,6 @@ app.MapGet("/", context =>
 });
 
 
-AuthRoute.Map(app);
-GameRoute.Map(app);
 
 
 if (app.Environment.IsDevelopment())

@@ -9,7 +9,7 @@ public static class GameRoute
     public static void Map(WebApplication app)
     {
         var group = app.MapGroup("/game");
-        group.MapPost("/create", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (GameService gameService) =>
+        group.MapPost("/create", [Authorize] (GameService gameService) =>
         {
             Console.WriteLine("Creating game");
             Guid gameId = gameService.CreateNewGame();
