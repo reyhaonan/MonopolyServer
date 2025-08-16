@@ -185,7 +185,7 @@ public class GameState
         {
             // Player rolled doubles, they get out of jail and can move
             player.FreeFromJail();
-
+            player.ResetConsecutiveDouble();
             // This line specifically enable the movement
             _totalDiceRoll = _diceRoll1 + _diceRoll2;
             _logger.LogInformation($"Player {player.Name} rolled doubles and got out of jail!");
