@@ -535,9 +535,10 @@ public class GameState
     public (Guid, List<TransactionInfo>) BuyProperty()
     {
         Player currentPlayer = GetCurrentPlayer();
-        // Action is only available on: [PostLandingActions, or on consecutive double]
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && currentPlayer.ConsecutiveDoubles == 0) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
-
+        // Action is only available on: [PostLandingActions, or on consecutive double and PlayerTurnStart]
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)&&(!CurrentPhase.Equals(GamePhase.PlayerTurnStart) || currentPlayer.ConsecutiveDoubles <= 0))
+            throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        
 
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition);
 
