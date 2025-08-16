@@ -689,6 +689,8 @@ public class GameState
         // Group ownership checks
         if (!Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id)) throw new InvalidOperationException("Cannot perform upgrade/downgrade because the player didnt own this group");
 
+        // TODO: Equal spread checks
+
         // Mortgaged property in group checks
         if (!Board.NoMortgagedPropertyInGroup(countryProperty.Group)) throw new InvalidOperationException("Cannot upgrade/downgrade because there is a mortgaged property in the group");
 
@@ -752,7 +754,7 @@ public class GameState
 
 
             TransactionsHistory.StartTransaction();
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseSellValue, true), (amount) =>
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>
             {
                 countryProperty.DownGradeRentStage();
                 currentPlayer.AddMoney(amount);
