@@ -268,7 +268,7 @@ public class GameState
         int dice1 = _random.Next(1, 7);
         int dice2 = _random.Next(1, 7);
         // int dice1 = 2;
-        // int dice2 = 1;
+        // int dice2 = 5;
         return (dice1, dice2);
     }
 
@@ -459,9 +459,22 @@ public class GameState
         var transactionInfo = TransactionsHistory.CommitTransaction();
 
         // Finalize the dice rolling process and return the result
-        ChangeGamePhase(GamePhase.PostLandingActions);
-        var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
-        var playerStateInfo = new RollResult.PlayerStateInfo(currentPlayer.IsInJail, currentPlayer.CurrentPosition, currentPlayer.JailTurnsRemaining);
+        if (currentPlayer.ConsecutiveDoubles > 0 && !currentPlayer.IsInJail) ChangeGamePhase(GamePhase.PlayerTurnStart);
+        else ChangeGamePhase(GamePhase.PostLandingActions);
+        var diceInfo = new RollResult.DiceInfo
+        {
+            Roll1 = _diceRoll1,
+            Roll2 = _diceRoll2,
+            TotalRoll = _totalDiceRoll
+            
+        };
+        var playerStateInfo = new RollResult.PlayerStateInfo
+        {
+            IsInJail = currentPlayer.IsInJail,
+            NewPlayerPosition = currentPlayer.CurrentPosition,
+            NewPlayerJailTurnsRemaining = currentPlayer.JailTurnsRemaining,
+            ConsecutiveDoubles = currentPlayer.ConsecutiveDoubles
+        };
 
         return new RollResult(diceInfo, playerStateInfo, transactionInfo);
     }
@@ -521,10 +534,10 @@ public class GameState
     /// <exception cref="InvalidOperationException"></exception>
     public (Guid, List<TransactionInfo>) BuyProperty()
     {
-        // Action is only available on: [PostLandingActions]
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
-
         Player currentPlayer = GetCurrentPlayer();
+        // Action is only available on: [PostLandingActions, or on consecutive double]
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && currentPlayer.ConsecutiveDoubles == 0) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+
 
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition);
 

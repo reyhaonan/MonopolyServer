@@ -7,21 +7,22 @@ public readonly struct RollResult
 {
     // Inner struct for dice roll details
     [method: JsonConstructor]    // Inner struct for dice roll details
-    public readonly struct DiceInfo(int roll1, int roll2, int totalRoll)
+    public readonly struct DiceInfo
     {
-        public int Roll1 { get; } = roll1;
-        public int Roll2 { get; } = roll2;
-        public int TotalRoll { get; } = totalRoll;
+        public int Roll1 { get; init;}
+        public int Roll2 { get; init;}
+        public int TotalRoll { get; init;}
     }
 
     // Inner struct for player state after the roll
     [method: JsonConstructor]
     // Inner struct for player state after the roll
-    public readonly struct PlayerStateInfo(bool isInJail, int newPlayerPosition, int newPlayerJailTurnsRemaining)
+    public readonly struct PlayerStateInfo
     {
-        public bool IsInJail { get; } = isInJail;
-        public int NewPlayerPosition { get; } = newPlayerPosition;
-        public int NewPlayerJailTurnsRemaining { get; } = newPlayerJailTurnsRemaining;
+        public bool IsInJail { get;init; }
+        public int NewPlayerPosition { get;init; }
+        public int NewPlayerJailTurnsRemaining { get;init; }
+        public int ConsecutiveDoubles { get;init; }
     }
 
 
