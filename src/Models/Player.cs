@@ -81,10 +81,8 @@ public class Player
 
     public void ReduceJailTurnRemaining()
     {
-        if (!IsInJail) throw new Exception("Player is not in jail");
+        if (!IsInJail || JailTurnsRemaining == 0) throw new Exception("Player is not in jail");
         JailTurnsRemaining--;
-        // TODO: By game config, make em pay 50 bucks
-        if (JailTurnsRemaining == 0) FreeFromJail();
     }
 
     public void FreeFromJail()

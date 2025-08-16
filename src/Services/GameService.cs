@@ -63,7 +63,6 @@ public class GameService
     }
 
     
-    // TODO: check player Guid using auth
     public async Task ProcessDiceRoll(Guid gameId, Guid playerId)
     {
         GameState game = GetGame(gameId);
@@ -84,7 +83,6 @@ public class GameService
 
 
     
-    // TODO: check player Guid using auth
     public async Task EndTurn(Guid gameId, Guid playerId)
     {
         GameState game = GetGame(gameId);
@@ -98,7 +96,6 @@ public class GameService
         });
     }
 
-    // TODO: check player Guid using auth
     public async Task PayToGetOutOfJail(Guid gameId, Guid playerId)
     {
 
@@ -116,7 +113,6 @@ public class GameService
     }
     
     
-    // TODO: check player Guid using auth
     public async Task UseGetOutOfJailCard(Guid gameId, Guid playerId)
     {
 
@@ -132,7 +128,6 @@ public class GameService
 
     }
 
-    // TODO: check player Guid using auth
     public async Task DeclareBankcruptcy(Guid gameId, Guid playerId)
     {
         GameState game = GetGame(gameId);
@@ -156,7 +151,6 @@ public class GameService
     }
   
     
-    // TODO: check player Guid using auth
     public async Task BuyProperty(Guid gameId, Guid playerId)
     {
         GameState game = GetGame(gameId);
@@ -175,7 +169,6 @@ public class GameService
 
     
     
-    // TODO: check player Guid using auth
     public async Task SellProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
         GameState game = GetGame(gameId);
@@ -193,7 +186,6 @@ public class GameService
     }
     
 
-    // TODO: check player Guid using auth
     public async Task UpgradeProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
         GameState game = GetGame(gameId);
@@ -212,7 +204,6 @@ public class GameService
 
     }
     
-    // TODO: check player Guid using auth
     public async Task DowngradeProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
         GameState game = GetGame(gameId);
@@ -231,7 +222,6 @@ public class GameService
 
     }
     
-    // TODO: check player Guid using auth
     public async Task MortgageProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
         GameState game = GetGame(gameId);
@@ -250,7 +240,6 @@ public class GameService
 
     }
     
-    // TODO: check player Guid using auth
     public async Task UnmortgageProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
         GameState game = GetGame(gameId);

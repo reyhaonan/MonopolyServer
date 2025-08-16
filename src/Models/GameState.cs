@@ -257,46 +257,42 @@ public class GameState
 
         return ActivePlayers;
     }
+    
+    #region Dice rolling handling
+    /// <summary>
+    /// Simulates the physical rolling of two dice.
+    /// </summary>
+    private static (int, int) RollPhysicalDice()
+    {
+        // Gamba, might wanna look for better randomness?
+        int dice1 = _random.Next(1, 7);
+        int dice2 = _random.Next(1, 7);
+        // int dice1 = 2;
+        // int dice2 = 1;
+        return (dice1, dice2);
+    }
 
     /// <summary>
-    /// Rolls the dice for the current player's turn, handles movement and special cases like doubles.
-    /// Changes game phases from PlayerTurnStart to RollingDice to MovingToken to LandingOnSpaceAction to PostLandingActions.
+    /// Handles the game logic for doubles, such as getting out of jail or going to jail after three consecutive doubles.
+    /// Also sets the total dice roll value for movement.
     /// </summary>
-    /// <exception cref="Exception">Thrown if not in the PlayerTurnStart phase</exception>
-    public RollResult RollDice()
+    private void HandleDiceRollConsequences(Player currentPlayer, int dice1, int dice2)
     {
-        if (CurrentPhase != GamePhase.PlayerTurnStart) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        bool isDoubles = dice1 == dice2;
 
-        ChangeGamePhase(GamePhase.RollingDice);
-
-
-        // Gotta reset lil bro
-        _totalDiceRoll = 0;
-
-        // Gamba, might wanna look for better randomness?
-        // _diceRoll1 = _random.Next(1, 7);
-        // _diceRoll2 = _random.Next(1, 7);
-        _diceRoll1 = 4;
-        _diceRoll2 = 4;
-
-        Player currentPlayer = GetCurrentPlayer();
-
-
-        // Handle rolling doubles
-        if (_diceRoll1 == _diceRoll2)
+        if (isDoubles)
         {
             if (currentPlayer.IsInJail)
             {
-                
-            // Player rolled doubles, they get out of jail and can move
-            currentPlayer.FreeFromJail();
-            currentPlayer.ResetConsecutiveDouble();
-            // This line specifically enable the movement
-            _totalDiceRoll = _diceRoll1 + _diceRoll2;
-            _logger.LogInformation($"Player {currentPlayer.Name} rolled doubles and got out of jail!");
+                // Player rolled doubles, they get out of jail and can move
+                currentPlayer.FreeFromJail();
+                currentPlayer.ResetConsecutiveDouble();
+                _totalDiceRoll = dice1 + dice2; // Enable movement
+                _logger.LogInformation($"Player {currentPlayer.Name} rolled doubles and got out of jail!");
             }
             else
             {
+                // Standard double roll
                 currentPlayer.AddConsecutiveDouble();
                 if (currentPlayer.ConsecutiveDoubles >= 3)
                 {
@@ -304,30 +300,36 @@ public class GameState
                 }
             }
         }
-        else
+        else // Not a double roll
         {
             currentPlayer.ResetConsecutiveDouble();
-            if(currentPlayer.IsInJail){
+            if (currentPlayer.IsInJail)
+            {
                 currentPlayer.ReduceJailTurnRemaining();
-
-                _totalDiceRoll = 0;
+                _totalDiceRoll = 0; // Player does not move
+                if (currentPlayer.JailTurnsRemaining == 0)
+                {
+                    // Free but no
+                    // TODO: By game config, make em pay 50 bucks
+                    currentPlayer.FreeFromJail();
+                    return;
+                }
             }
         }
 
-        bool passedStart = false;
-
-        // Only move if the player is not in jail or just got out of jail
+        // If the player isn't in jail after all checks, set the total roll for movement
         if (!currentPlayer.IsInJail)
         {
-            passedStart = currentPlayer.MoveBy(_totalDiceRoll);
-            ChangeGamePhase(GamePhase.MovingToken);
-            _logger.LogInformation($"Player moved to position {currentPlayer.CurrentPosition}");
+            _totalDiceRoll = dice1 + dice2;
         }
+    }
 
-        ChangeGamePhase(GamePhase.LandingOnSpaceAction);
-
-        TransactionsHistory.StartTransaction();
-        // Salary🥳
+    /// <summary>
+    /// Manages all events that occur when a player lands on a space.
+    /// </summary>
+    private void HandleLandingActions(Player currentPlayer, bool passedStart, int totalDiceRoll)
+    {
+        // Collect Salary if player passed Go
         if (passedStart)
         {
             TransactionsHistory.AddTransaction(
@@ -336,104 +338,135 @@ public class GameState
             );
         }
 
-        // Handle landing on spaces
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new InvalidOperationException("Invalid space");
 
-        // Landed on Go To Jail👮‍♂️
-
-
-        // Landed on special(ntar)
+        // Handle landing on different types of spaces
         if (space is SpecialSpace specialSpace)
         {
-            _logger.LogInformation($"{currentPlayer.Name} landed on another special space of type {specialSpace.Type}.");
-            switch (specialSpace.Type)
-            {
-                case SpecialSpaceType.GoToJail:
-                    currentPlayer.GoToJail();
-                    break;
-                case SpecialSpaceType.IncomeTax:
-                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 200, true), (amount) =>
-                    {
-                        currentPlayer.DeductMoney(amount);
-                    });
-                    break;
-                case SpecialSpaceType.LuxuryTax:
-                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 100, true), (amount) =>
-                    {
-                        currentPlayer.DeductMoney(amount);
-                    });
-                    break;
-                case SpecialSpaceType.Chance:
-                case SpecialSpaceType.CommunityChest:
-                case SpecialSpaceType.FreeParking:
-                case SpecialSpaceType.Jail:
-                case SpecialSpaceType.Go:
-                    // TODO: this
-                    break;
-
-                default:
-                    throw new Exception("How did you land on this space??");
-            }
-            // TODO: [GameConfig] If a player lands on Vacation, all collected money from taxes and bank payments will be earned
+            ProcessSpecialSpaceLanding(currentPlayer, specialSpace);
         }
-
-        // Landed on a property
         else if (space is Property property)
         {
-            // PROPERTY OWNED BY OTHER PLAYER
-            if (property.IsOwnedByOtherPlayer(currentPlayer.Id))
-            {
-                var ownerId = property.OwnerId ?? throw new Exception("[Impossible] Landed on a tile owned by other player but no id?");
-
-                decimal rentValue;
-                if (property is CountryProperty countryProperty)
-                {
-                    rentValue = countryProperty.CalculateRent(_totalDiceRoll);
-                }
-                else if (property is UtilityProperty utilityProperty)
-                {
-                    var utilityOwnedByRentOwner = Board.GetUtilityOwnedByPlayer(ownerId);
-                    rentValue = utilityProperty.CalculateRent(_totalDiceRoll, 0, utilityOwnedByRentOwner.Count);
-                }
-                else if (property is RailroadProperty railroadProperty)
-                {
-                    var railroadOwnedByRentOwner = Board.GetRailroadOwnedByPlayer(ownerId);
-                    rentValue = railroadProperty.CalculateRent(0, railroadOwnedByRentOwner.Count);
-                }
-                else throw new Exception("[Impossible] Unhandled property type");
-
-
-                // TODO: [GameConfig] If a player owns a full property set, the base rent payment will be doubled
-                // TODO: [GameConfig] Rent will not be collected when landing on properties whose owners are in prison
-
-                _logger.LogInformation($"Deducting {currentPlayer.Name}'s money from rent: {rentValue}");
-
-                Player Owner = GetPlayerById(ownerId) ?? throw new Exception("[Impossible] Owner not found on active player list");
-
-                if (rentValue != 0)
-                {
-                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false), (amount) =>
-                    {
-                        currentPlayer.DeductMoney(amount);
-                        Owner.AddMoney(amount);
-                    });
-                }
-            }
+            ProcessPropertyLanding(currentPlayer, property, totalDiceRoll);
         }
         else
         {
             _logger.LogInformation($"{currentPlayer.Name} landed on an unknown space type.");
         }
+    }
 
+    /// <summary>
+    /// Processes actions for landing on a SpecialSpace (e.g., Go To Jail, Tax).
+    /// </summary>
+    private void ProcessSpecialSpaceLanding(Player currentPlayer, SpecialSpace specialSpace)
+    {
+        _logger.LogInformation($"{currentPlayer.Name} landed on a special space: {specialSpace.Type}.");
+        switch (specialSpace.Type)
+        {
+            case SpecialSpaceType.GoToJail:
+                currentPlayer.GoToJail();
+                break;
+            case SpecialSpaceType.IncomeTax:
+                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 200, true), 
+                    (amount) => currentPlayer.DeductMoney(amount));
+                break;
+            case SpecialSpaceType.LuxuryTax:
+                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 100, true), 
+                    (amount) => currentPlayer.DeductMoney(amount));
+                break;
+            // Other cases (Chance, CommunityChest, etc.) would go here
+            default:
+                // No action needed for spaces like Free Parking, Jail (Just Visiting), etc.
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Processes actions for landing on a Property, primarily handling rent payment.
+    /// </summary>
+    private void ProcessPropertyLanding(Player currentPlayer, Property property, int totalDiceRoll)
+    {
+        if (!property.IsOwnedByOtherPlayer(currentPlayer.Id))
+        {
+            // Player landed on their own property or an unowned one. No action needed here.
+            return;
+        }
+
+        var ownerId = property.OwnerId ?? throw new Exception("Property is owned but has no OwnerId.");
+        Player owner = GetPlayerById(ownerId) ?? throw new Exception("Owner not found.");
+
+        // TODO: Add check: Rent will not be collected when landing on properties whose owners are in prison.
+        
+        decimal rentValue = 0;
+        if (property is CountryProperty countryProperty)
+        {
+            // TODO: Add logic for doubled rent on full sets.
+            rentValue = countryProperty.CalculateRent(totalDiceRoll);
+        }
+        else if (property is UtilityProperty utilityProperty)
+        {
+            var utilityCount = Board.GetUtilityOwnedByPlayer(ownerId).Count;
+            rentValue = utilityProperty.CalculateRent(totalDiceRoll, 0, utilityCount);
+        }
+        else if (property is RailroadProperty railroadProperty)
+        {
+            var railroadCount = Board.GetRailroadOwnedByPlayer(ownerId).Count;
+            rentValue = railroadProperty.CalculateRent(0, railroadCount);
+        }
+
+        if (rentValue > 0)
+        {
+            _logger.LogInformation($"Deducting {rentValue} from {currentPlayer.Name} for rent to {owner.Name}.");
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false), (amount) =>
+            {
+                currentPlayer.DeductMoney(amount);
+                owner.AddMoney(amount);
+            });
+        }
+    }
+
+    /// <summary>
+    /// Rolls the dice for the current player's turn, handles movement and special cases like doubles.
+    /// Changes game phases from PlayerTurnStart to RollingDice to MovingToken to LandingOnSpaceAction to PostLandingActions.
+    /// </summary>
+    /// <exception cref="Exception">Thrown if not in the PlayerTurnStart phase</exception>
+    public RollResult RollDice()
+    {
+        if (CurrentPhase != GamePhase.PlayerTurnStart)
+            throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+
+        ChangeGamePhase(GamePhase.RollingDice);
+        var currentPlayer = GetCurrentPlayer();
+
+        // Roll the dice and handle immediate consequences (jail, doubles)
+        _totalDiceRoll = 0; // Reset from previous turn
+        (_diceRoll1, _diceRoll2) = RollPhysicalDice();
+        HandleDiceRollConsequences(currentPlayer, _diceRoll1, _diceRoll2);
+
+        // Move the player's token on the board
+        bool passedStart = false;
+        if (!currentPlayer.IsInJail)
+        {
+            ChangeGamePhase(GamePhase.MovingToken);
+            passedStart = currentPlayer.MoveBy(_totalDiceRoll);
+            _logger.LogInformation($"Player moved to position {currentPlayer.CurrentPosition}");
+        }
+
+        // Handle all actions related to landing on a new space
+        ChangeGamePhase(GamePhase.LandingOnSpaceAction);
+        TransactionsHistory.StartTransaction();
+        HandleLandingActions(currentPlayer, passedStart, _totalDiceRoll);
+        var transactionInfo = TransactionsHistory.CommitTransaction();
+
+        // Finalize the dice rolling process and return the result
+        ChangeGamePhase(GamePhase.PostLandingActions);
         var diceInfo = new RollResult.DiceInfo(_diceRoll1, _diceRoll2, _totalDiceRoll);
         var playerStateInfo = new RollResult.PlayerStateInfo(currentPlayer.IsInJail, currentPlayer.CurrentPosition, currentPlayer.JailTurnsRemaining);
 
-        ChangeGamePhase(GamePhase.PostLandingActions);
-
-        var transactionInfo = TransactionsHistory.CommitTransaction();
         return new RollResult(diceInfo, playerStateInfo, transactionInfo);
     }
 
+    #endregion
     /// <summary>
     /// Ends the current player's turn and advances to the next player.
     /// Changes the game phase from PostLandingActions to PlayerTurnStart.
