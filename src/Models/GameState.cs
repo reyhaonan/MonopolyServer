@@ -173,34 +173,6 @@ public class GameState
 
     #region Jail Handling
     /// <summary>
-    /// Handles a player's turn while they are in jail.
-    /// If they roll doubles, they get out of jail and can move.
-    /// Otherwise, their jail turn count is reduced, and they stay in jail.
-    /// If they've been in jail for 3 turns, they are automatically released.
-    /// </summary>
-    /// <param name="player">The player who is currently in jail</param>
-    private void HandleJailTurn(Player player)
-    {
-        if (_diceRoll1 == _diceRoll2)
-        {
-            // Player rolled doubles, they get out of jail and can move
-            player.FreeFromJail();
-            player.ResetConsecutiveDouble();
-            // This line specifically enable the movement
-            _totalDiceRoll = _diceRoll1 + _diceRoll2;
-            _logger.LogInformation($"Player {player.Name} rolled doubles and got out of jail!");
-        }
-        else
-        {
-            // Player didn't roll doubles, reduce their jail turn count
-            player.ReduceJailTurnRemaining();
-
-            _totalDiceRoll = 0; // No movement while in jail
-
-        }
-    }
-
-    /// <summary>
     /// Allows a player to pay $50 to get out of jail immediately.
     /// </summary>
     public List<TransactionInfo> PayToGetOutOfJail()
@@ -302,30 +274,45 @@ public class GameState
         _totalDiceRoll = 0;
 
         // Gamba, might wanna look for better randomness?
-        _diceRoll1 = _random.Next(1, 7);
-        _diceRoll2 = _random.Next(1, 7);
-        // _diceRoll1 = 2;
-        // _diceRoll2 = 0;
+        // _diceRoll1 = _random.Next(1, 7);
+        // _diceRoll2 = _random.Next(1, 7);
+        _diceRoll1 = 4;
+        _diceRoll2 = 4;
 
         Player currentPlayer = GetCurrentPlayer();
-
-
-
-        // Handle jail status before movement
-        if (currentPlayer.IsInJail) HandleJailTurn(currentPlayer);
-        else _totalDiceRoll = _diceRoll1 + _diceRoll2;
 
 
         // Handle rolling doubles
         if (_diceRoll1 == _diceRoll2)
         {
-            currentPlayer.AddConsecutiveDouble();
-            if (currentPlayer.ConsecutiveDoubles >= 3)
+            if (currentPlayer.IsInJail)
             {
-                currentPlayer.GoToJail();
+                
+            // Player rolled doubles, they get out of jail and can move
+            currentPlayer.FreeFromJail();
+            currentPlayer.ResetConsecutiveDouble();
+            // This line specifically enable the movement
+            _totalDiceRoll = _diceRoll1 + _diceRoll2;
+            _logger.LogInformation($"Player {currentPlayer.Name} rolled doubles and got out of jail!");
+            }
+            else
+            {
+                currentPlayer.AddConsecutiveDouble();
+                if (currentPlayer.ConsecutiveDoubles >= 3)
+                {
+                    currentPlayer.GoToJail();
+                }
             }
         }
-        else currentPlayer.ResetConsecutiveDouble();
+        else
+        {
+            currentPlayer.ResetConsecutiveDouble();
+            if(currentPlayer.IsInJail){
+                currentPlayer.ReduceJailTurnRemaining();
+
+                _totalDiceRoll = 0;
+            }
+        }
 
         bool passedStart = false;
 
