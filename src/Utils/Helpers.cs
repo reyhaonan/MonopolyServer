@@ -41,7 +41,7 @@ public static class Helpers
         return accessToken;
     }
 
-    public static string SetRefreshTokenCookie(HttpResponse response, AuthService authService, string userId, DateTime refreshTokenExpiry)
+    public static string SetRefreshTokenCookie(HttpResponse response, AuthService authService, string userId, string username, DateTime refreshTokenExpiry)
     {
         var refreshTokenClaims = new Dictionary<string, object>
         {
@@ -56,9 +56,18 @@ public static class Helpers
             SameSite = SameSiteMode.None,
             Secure = true
         };
+        var usernameCookieOptions = new CookieOptions
+        {
+            Expires = refreshTokenExpiry,
+            SameSite = SameSiteMode.None,
+            Secure = true
+        };
 
         response.Cookies.Delete("RefreshToken");
         response.Cookies.Append("RefreshToken", refreshToken, refreshTokenCookieOptions);
+
+        response.Cookies.Delete("Username");
+        response.Cookies.Append("Username", username, usernameCookieOptions);
 
         return refreshToken;
     }

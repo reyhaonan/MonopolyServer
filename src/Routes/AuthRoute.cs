@@ -25,7 +25,7 @@ public static class AuthRoute
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
             Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry);
-            Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(), refreshTokenExpiry);
+            Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(),user.Username, refreshTokenExpiry);
 
             return TypedResults.Ok(new
             {
@@ -45,14 +45,14 @@ public static class AuthRoute
 
         group.MapPost("/guest", async (string username, HttpResponse response, AuthService authService) =>
         {
-            var guestId = new Guid();
+            var guestId = Guid.NewGuid();;
 
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
             
             Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry);
-            Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), refreshTokenExpiry);
+            Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), username, refreshTokenExpiry);
 
             return TypedResults.Ok(new
             {
@@ -64,7 +64,7 @@ public static class AuthRoute
             });
         });
 
-        group.MapGet("/me", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (ClaimsPrincipal user) =>
+        group.MapGet("/me", [Authorize] async (ClaimsPrincipal user) =>
         {
             var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
 

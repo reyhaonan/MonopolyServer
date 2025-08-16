@@ -14,15 +14,15 @@ public class Board
     private void InitializeBoard()
     {
         Spaces.Add(new SpecialSpace("GO!", 0, SpecialSpaceType.Go));
-        Spaces.Add(new CountryProperty("Bhutan", 1, 60, ColorGroup.Brown, [2, 10, 30, 90, 160, 250], 50));
+        Spaces.Add(new CountryProperty("Indonesia", 1, 60, ColorGroup.Brown, [2, 10, 30, 90, 160, 250], 50));
         Spaces.Add(new SpecialSpace("Community Chest", 2, SpecialSpaceType.CommunityChest));
-        Spaces.Add(new CountryProperty("Laos", 3, 60, ColorGroup.Brown, [4, 20, 60, 180, 320, 450], 50));
+        Spaces.Add(new CountryProperty("Malaysia", 3, 60, ColorGroup.Brown, [4, 20, 60, 180, 320, 450], 50));
         Spaces.Add(new SpecialSpace("Income Tax", 4, SpecialSpaceType.IncomeTax));
         Spaces.Add(new RailroadProperty("Shibuya Station", 5));
-        Spaces.Add(new CountryProperty("Cambodia", 6, 100, ColorGroup.LightBlue, [6, 30, 90, 270, 400, 550], 50));
+        Spaces.Add(new CountryProperty("Thailand", 6, 100, ColorGroup.LightBlue, [6, 30, 90, 270, 400, 550], 50));
         Spaces.Add(new SpecialSpace("Chance", 7, SpecialSpaceType.Chance));
         Spaces.Add(new CountryProperty("Vietnam", 8, 100, ColorGroup.LightBlue, [6, 30, 90, 270, 400, 550], 50));
-        Spaces.Add(new CountryProperty("Malaysia", 9, 120, ColorGroup.LightBlue, [8, 40, 100, 300, 450, 600], 50));
+        Spaces.Add(new CountryProperty("Singapore", 9, 120, ColorGroup.LightBlue, [8, 40, 100, 300, 450, 600], 50));
         Spaces.Add(new SpecialSpace("Jail / Just Visiting", 10, SpecialSpaceType.Jail)); // Jail space
         Spaces.Add(new CountryProperty("Portugal", 11, 140, ColorGroup.Pink, [10, 50, 150, 450, 625, 750], 100));
         Spaces.Add(new UtilityProperty("Electric Company", 12));
@@ -50,7 +50,7 @@ public class Board
         Spaces.Add(new CountryProperty("France", 34, 320, ColorGroup.Green, [28, 150, 450, 1000, 1200, 1400], 200));
         Spaces.Add(new RailroadProperty("JFK Airport", 35));
         Spaces.Add(new SpecialSpace("Chance", 36, SpecialSpaceType.Chance));
-        Spaces.Add(new CountryProperty("United States", 37, 350, ColorGroup.DarkBlue, [35, 175, 500, 1100, 1300, 1500], 200));
+        Spaces.Add(new CountryProperty("USA", 37, 350, ColorGroup.DarkBlue, [35, 175, 500, 1100, 1300, 1500], 200));
         Spaces.Add(new SpecialSpace("Luxury Tax", 38, SpecialSpaceType.LuxuryTax));
         Spaces.Add(new CountryProperty("China", 39, 400, ColorGroup.DarkBlue, [50, 200, 600, 1400, 1700, 2000], 200));
     }

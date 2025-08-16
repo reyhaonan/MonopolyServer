@@ -377,11 +377,13 @@ public class GameState
                     });
                     break;
                 case SpecialSpaceType.Chance:
-                    // TODO: this
-                    break;
                 case SpecialSpaceType.CommunityChest:
+                case SpecialSpaceType.FreeParking:
+                case SpecialSpaceType.Jail:
+                case SpecialSpaceType.Go:
                     // TODO: this
                     break;
+
                 default:
                     throw new Exception("How did you land on this space??");
             }
