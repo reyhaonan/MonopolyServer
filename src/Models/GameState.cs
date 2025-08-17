@@ -476,7 +476,13 @@ public class GameState
             ConsecutiveDoubles = currentPlayer.ConsecutiveDoubles
         };
 
-        return new RollResult(diceInfo, playerStateInfo, transactionInfo);
+        return new RollResult
+        {
+            Dice = diceInfo,
+            PlayerState = playerStateInfo,
+            Transaction = transactionInfo,
+            NewGamePhase = CurrentPhase
+        };
     }
 
     #endregion
@@ -547,7 +553,7 @@ public class GameState
             // Check ownership
             if (property.OwnerId != null) throw new InvalidOperationException("This property is already owned");
 
-            // Check player money
+            // Check player money`
             if (currentPlayer.Money < property.PurchasePrice) throw new InvalidOperationException("Not enough money to buy this property");
 
             TransactionsHistory.StartTransaction();

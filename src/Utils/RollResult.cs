@@ -1,5 +1,6 @@
 
 using System.Text.Json.Serialization;
+using MonopolyServer.Enums;
 using MonopolyServer.Models;
 
 namespace MonopolyServer.Utils;
@@ -27,17 +28,12 @@ public readonly struct RollResult
 
 
     [JsonInclude]
-    public DiceInfo Dice { get; }
+    public DiceInfo Dice { get;init; }
     [JsonInclude]
-    public PlayerStateInfo PlayerState { get; }
+    public PlayerStateInfo PlayerState { get;init; }
     [JsonInclude]
-    public List<TransactionInfo> Transaction { get; }
+    public List<TransactionInfo> Transaction { get;init; }
+    [JsonInclude]
+    public GamePhase NewGamePhase { get;init; }
 
-    [JsonConstructor]
-    public RollResult(DiceInfo dice, PlayerStateInfo playerState, List<TransactionInfo> transaction)
-    {
-        Dice = dice;
-        PlayerState = playerState;
-        Transaction = transaction;
-    }
 }

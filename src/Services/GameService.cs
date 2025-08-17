@@ -52,7 +52,7 @@ public class GameService
         return newPlayer;
     }
 
-    // TODO: Spectator
+    
 
     public async Task StartGame(Guid gameId)
     {
@@ -258,10 +258,12 @@ public class GameService
 
     }
 
-    // TODO: check initiator Guid using auth
+    
     public async Task InitiateTrade(Guid gameId, Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
         GameState game = GetGame(gameId);
+
+        if(initiatorId.Equals(recipientId))throw new InvalidOperationException("Cannot trade with yourself");
 
         var trade = game.InitiateTrade(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
@@ -272,7 +274,7 @@ public class GameService
 
     }
 
-    // TODO: check approval Guid using auth
+    
     public async Task AcceptTrade(Guid gameId, Guid approvalId, Guid tradeId)
     {
         GameState game = GetGame(gameId);
@@ -288,7 +290,7 @@ public class GameService
 
     }
     
-    // TODO: check approval Guid using auth
+    
     public async Task RejectTrade(Guid gameId, Guid approvalId, Guid tradeId)
     {
         GameState game = GetGame(gameId);
