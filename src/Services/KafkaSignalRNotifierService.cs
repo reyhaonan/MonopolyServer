@@ -163,14 +163,19 @@ public class KafkaSignalRNotifierService : BackgroundService
                             }
                             else if (eventType == "AcceptTrade")
                             {
-                                var tradeId = eventData.GetProperty("TradeId").GetGuid();
+                                var trade = eventData.GetProperty("Trade").Deserialize<Trade>();
                                 var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
-                                await _hubContext.Clients.Group(gameId.ToString()).AcceptTradeResponse(gameId, tradeId, transactions);
+                                await _hubContext.Clients.Group(gameId.ToString()).AcceptTradeResponse(gameId, trade, transactions);
                             }
                             else if (eventType == "RejectTrade")
                             {
                                 var tradeId = eventData.GetProperty("TradeId").GetGuid();
                                 await _hubContext.Clients.Group(gameId.ToString()).RejectTradeResponse(gameId, tradeId);
+                            }
+                            else if (eventType == "CancelTrade")
+                            {
+                                var tradeId = eventData.GetProperty("TradeId").GetGuid();
+                                await _hubContext.Clients.Group(gameId.ToString()).CancelTradeResponse(gameId, tradeId);
                             }
                             else if (eventType == "NegotiateTrade")
                             {

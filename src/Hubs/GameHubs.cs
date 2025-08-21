@@ -39,8 +39,9 @@ public interface IResponse
 
     // Trading stuff
     Task InitiateTradeResponse(Guid gameId, Trade trade);
-    Task AcceptTradeResponse(Guid gameId, Guid tradeId, List<TransactionInfo> transactions);
+    Task AcceptTradeResponse(Guid gameId, Trade trade, List<TransactionInfo> transactions);
     Task RejectTradeResponse(Guid gameId, Guid tradeId);
+    Task CancelTradeResponse(Guid gameId, Guid tradeId);
     Task NegotiateTradeResponse(Guid gameId, Trade trade);
     #endregion
 }
@@ -170,15 +171,25 @@ public class GameHubs : Hub<IResponse>
         var initiatorId = GetPlayerId();
         await _gameService.InitiateTrade(gameId, initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
     }
+    public async Task NegotiateTrade(Guid gameId,Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        var negotiatorId = GetPlayerId();
+        await _gameService.NegotiateTrade(gameId, negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+    }
     public async Task AcceptTrade(Guid gameId, Guid tradeId)
     {
-        var approvalId = GetPlayerId();
-        await _gameService.AcceptTrade(gameId, approvalId, tradeId);
+        var recipientId = GetPlayerId();
+        await _gameService.AcceptTrade(gameId, recipientId, tradeId);
     }
     public async Task RejectTrade(Guid gameId, Guid tradeId)
     {
-        var approvalId = GetPlayerId();
-        await _gameService.RejectTrade(gameId, approvalId, tradeId);
+        var recipientId = GetPlayerId();
+        await _gameService.RejectTrade(gameId, recipientId, tradeId);
+    }
+    public async Task CancelTrade(Guid gameId, Guid tradeId)
+    {
+        var initiatorId = GetPlayerId();
+        await _gameService.CancelTrade(gameId, initiatorId, tradeId);
     }
     #endregion
 

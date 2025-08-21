@@ -5,6 +5,7 @@ using MonopolyServer.Utils;
 namespace MonopolyServer.Models;
 
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 public class GameState
@@ -816,11 +817,11 @@ public class GameState
         return newTrade;
     }
 
-    public List<TransactionInfo> AcceptTrade(Guid tradeId, Guid approvalId)
+    public (List<TransactionInfo>, Trade) AcceptTrade(Guid tradeId, Guid recipientId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
 
-        if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
+        if (trade.RecipientId != recipientId) throw new InvalidOperationException("Player is not permitted to perform this action");
 
         Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new Exception("Initiator not found");
         Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new Exception("Recipient not found");
@@ -870,24 +871,32 @@ public class GameState
         {
             property.ChangeOwner(recipientPlayer.Id);
         }
-
+        
         ActiveTrades.Remove(trade);
 
-        return TransactionsHistory.CommitTransaction();
+        return (TransactionsHistory.CommitTransaction(), trade);
     }
-    public void RejectTrade(Guid tradeId, Guid approvalId)
+    public void RejectTrade(Guid tradeId, Guid recipientId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
 
-        if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
+        if (trade.RecipientId != recipientId) throw new InvalidOperationException("Player is not permitted to perform this action");
 
         ActiveTrades.Remove(trade);
     }
-    public Trade NegotiateTrade(Guid approvalId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public void CancelTrade(Guid tradeId, Guid initiatorId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
 
-        if (trade.ApprovalId != approvalId) throw new InvalidOperationException("Player is not permitted to perform this action");
+        if (trade.InitiatorId != initiatorId) throw new InvalidOperationException("Player is not permitted to perform this action");
+
+        ActiveTrades.Remove(trade);
+    }
+    public Trade NegotiateTrade(Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
+
+        if (trade.RecipientId != negotiatorId) throw new InvalidOperationException("Player is not permitted to perform this action");
 
         Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new Exception("Initiator not found");
         Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new Exception("Recipient not found");

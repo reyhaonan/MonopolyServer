@@ -275,15 +275,15 @@ public class GameService
     }
 
     
-    public async Task AcceptTrade(Guid gameId, Guid approvalId, Guid tradeId)
+    public async Task AcceptTrade(Guid gameId, Guid recipientId, Guid tradeId)
     {
         GameState game = GetGame(gameId);
 
-        var transactions = game.AcceptTrade(tradeId, approvalId);
+        var (transactions, trade) = game.AcceptTrade(tradeId, recipientId);
 
         await _eventPublisher.PublishGameActionEvent("AcceptTrade", gameId, new
         {
-            TradeId = tradeId,
+            Trade = trade,
             Transactions = transactions
         });
 
@@ -303,12 +303,24 @@ public class GameService
         });
 
     }
-
-    public async Task NegotiateTrade(Guid gameId, Guid approvalId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public async Task CancelTrade(Guid gameId, Guid initiatorId, Guid tradeId)
     {
         GameState game = GetGame(gameId);
 
-        Trade trade = game.NegotiateTrade(approvalId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        game.CancelTrade(tradeId, initiatorId);
+
+        await _eventPublisher.PublishGameActionEvent("CancelTrade", gameId, new
+        {
+            TradeId = tradeId
+        });
+
+    }
+
+    public async Task NegotiateTrade(Guid gameId, Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    {
+        GameState game = GetGame(gameId);
+
+        Trade trade = game.NegotiateTrade(negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
         await _eventPublisher.PublishGameActionEvent("NegotiateTrade", gameId, new
         {
