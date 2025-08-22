@@ -119,20 +119,18 @@ app.Use((context, next) => {
 
     var scheme = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.AuthenticationSchemes;
     var typeId = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.TypeId;
+    Console.WriteLine($"Method {scheme} {typeId} {context.User.Identity.IsAuthenticated}");
     //  XSRF-TOKEN Checks if authenticated and auth scheme used is default
     if (scheme != "RefreshTokenScheme" && typeId != null && context.User.Identity.IsAuthenticated)
     {
-        if (context.Request.Method == HttpMethods.Post || context.Request.Method == HttpMethods.Put || context.Request.Method == HttpMethods.Delete)
-        {
-            string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
-            string? jwtXsrfToken = context.Request.Cookies.FirstOrDefault(e => e.Key == "XSRF-TOKEN").Value;
+        string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
+        string? jwtXsrfToken = context.Request.Cookies.FirstOrDefault(e => e.Key == "XSRF-TOKEN").Value;
 
-            if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
-            {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                context.Response.WriteAsync("Invalid XSRF token");
-                return Task.CompletedTask;
-            }
+        if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.WriteAsync("Invalid XSRF token");
+            return Task.CompletedTask;
         }
     }
     return next(context);
