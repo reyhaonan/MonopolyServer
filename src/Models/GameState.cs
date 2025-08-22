@@ -266,10 +266,10 @@ public class GameState
     private static (int, int) RollPhysicalDice()
     {
         // Gamba, might wanna look for better randomness?
-        int dice1 = _random.Next(1, 7);
-        int dice2 = _random.Next(1, 7);
-        // int dice1 = 2;
-        // int dice2 = 5;
+        // int dice1 = _random.Next(1, 7);
+        // int dice2 = _random.Next(1, 7);
+        int dice1 = 1;
+        int dice2 = 0;
         return (dice1, dice2);
     }
 
@@ -599,7 +599,7 @@ public class GameState
 
 
             bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
-            bool noHouseInGroup = Board.GetPropertiesInGroup(countryProperty.Group).All(property => property.CurrentRentStage == RentStage.Unimproved);
+            bool noHouseInGroup = Board.NoHouseInGroup(countryProperty.Group);
 
             // Disallow mortgage if player has a house in a group
             if (groupIsOwnedByPlayer && !noHouseInGroup) throw new InvalidOperationException("Cannot sell property if other property has house");
@@ -644,7 +644,7 @@ public class GameState
             if (!countryProperty.CurrentRentStage.Equals(RentStage.Unimproved)) throw new InvalidOperationException("Can't mortgage property with house");
 
             bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id);
-            bool noHouseInGroup = Board.GetPropertiesInGroup(countryProperty.Group).All(property => property.CurrentRentStage == RentStage.Unimproved);
+            bool noHouseInGroup = Board.NoHouseInGroup(countryProperty.Group);
 
             // Disallow mortgage if player has a house in a group
             if (groupIsOwnedByPlayer && !noHouseInGroup) throw new InvalidOperationException("Cannot mortgage if other property has house");
@@ -789,18 +789,43 @@ public class GameState
     #region Trade
     private void _validateTrade(Player initiatorPlayer, Player recipientPlayer, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {
+        // Verify initiator money
+        if (initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator money is invalid");
+        // Verify recipient money
+        if (recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient money is invalid");
+
         // Verify if property offer is valid(owned by initiator)
         bool initiatorPropertyIsValid = propertyOffer.All(property => initiatorPlayer.PropertiesOwned.Contains(property));
         if (!initiatorPropertyIsValid) throw new InvalidOperationException("Property Offer is invalid");
-        // Verify initiator money
-        if (initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator money is invalid");
-
         // Verify if property counter offer is valid(owned by recipient)
         bool recipientPropertyIsValid = propertyCounterOffer.All(property => recipientPlayer.PropertiesOwned.Contains(property));
         if (!recipientPropertyIsValid) throw new InvalidOperationException("Property Counter Offer is invalid");
 
-        // Verify recipient money
-        if (recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient money is invalid");
+        // Verify if the property is a country, this property or other in the same group doesnt have house
+        foreach(Guid propertyId in propertyOffer) {
+            var property = Board.GetPropertyById(propertyId);
+            if (property is CountryProperty countryProperty)
+            {
+                bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, initiatorPlayer.Id);
+                bool noHouseInGroup = Board.NoHouseInGroup(countryProperty.Group);
+
+                // Disallow mortgage if player has a house in a group
+                if (groupIsOwnedByPlayer && !noHouseInGroup) throw new InvalidOperationException("Cannot trade country property if this or other property has house");
+            }
+        }
+        // Verify if the property is a country, this property or other in the same group doesnt have house
+        foreach(Guid propertyId in propertyCounterOffer) {
+            var property = Board.GetPropertyById(propertyId);
+            if (property is CountryProperty countryProperty)
+            {
+                bool groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, recipientPlayer.Id);
+                bool noHouseInGroup = Board.NoHouseInGroup(countryProperty.Group);
+
+                // Disallow mortgage if player has a house in a group
+                if (groupIsOwnedByPlayer && !noHouseInGroup) throw new InvalidOperationException("Cannot trade country property if this or other property has house");
+            }
+        }
+
     }
     public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
     {

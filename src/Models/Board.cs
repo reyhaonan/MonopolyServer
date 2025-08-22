@@ -90,5 +90,10 @@ public class Board
         var properties = GetPropertiesInGroup(group);
         return properties.All(property => property.OwnerId != null && !property.IsMortgaged);
     }
+    public bool NoHouseInGroup(ColorGroup group)
+    {
+        var properties = GetPropertiesInGroup(group);
+        return properties.All(property => property.CurrentRentStage == RentStage.Unimproved);
+    }
 }
 

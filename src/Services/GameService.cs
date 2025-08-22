@@ -44,6 +44,7 @@ public class GameService
         GameState game = GetGame(gameId);
         if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
         if (game.ActivePlayers.Any(p => p.Id == newPlayerId)) throw new InvalidOperationException("Player already joined the game");
+        if (game.ActivePlayers.Count >= 8) throw new InvalidOperationException("Room is full");
         Player newPlayer = new Player(playerName, newPlayerId);
         game.AddPlayer(newPlayer);
 
@@ -57,6 +58,7 @@ public class GameService
     public async Task StartGame(Guid gameId)
     {
         GameState game = GetGame(gameId);
+        if (game.ActivePlayers.Count <= 1) throw new InvalidOperationException("Cannot start a game with only one player");
         var newPlayerOrder = game.StartGame();
 
         await _eventPublisher.PublishGameControlEvent("GameStart", gameId, new { NewPlayerOrder = newPlayerOrder });
