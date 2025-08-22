@@ -8,7 +8,7 @@ public class Player
     [JsonInclude]
     public Guid Id { get; init; } // Unique identifier for the player
     [JsonInclude]
-    public string Name { get; private set; }
+    public string Name { get; init; }
     [JsonInclude]
     public decimal Money { get; private set; }
     [JsonInclude]
@@ -25,8 +25,10 @@ public class Player
     public List<Guid> PropertiesOwned { get; private set; } // List of Property IDs owned by this player
     [JsonInclude]
     public bool IsBankrupt { get; private set; }
+    [JsonInclude]
+    public string HexColor { get; init; }
 
-    public Player(string name, Guid id)
+    public Player(string name, string hexColor, Guid id)
     {
         Id = id;
         Name = name;
@@ -38,6 +40,7 @@ public class Player
         ConsecutiveDoubles = 0;
         PropertiesOwned = new List<Guid>();
         IsBankrupt = false;
+        HexColor = hexColor;
     }
 
     #region Money

@@ -39,13 +39,14 @@ public class GameService
     }
 
 
-    public async Task<Player> AddPlayerToGame(Guid gameId, string playerName, Guid newPlayerId)
+    public async Task<Player> AddPlayerToGame(Guid gameId, string playerName, string hexColor, Guid newPlayerId)
     {
         GameState game = GetGame(gameId);
         if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
         if (game.ActivePlayers.Any(p => p.Id == newPlayerId)) throw new InvalidOperationException("Player already joined the game");
+        if (game.ActivePlayers.Any(p => p.HexColor == hexColor)) throw new InvalidOperationException("Player with the same color already exist");
         if (game.ActivePlayers.Count >= 8) throw new InvalidOperationException("Room is full");
-        Player newPlayer = new Player(playerName, newPlayerId);
+        Player newPlayer = new Player(playerName, hexColor, newPlayerId);
         game.AddPlayer(newPlayer);
 
         await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameId, new { Players = game.ActivePlayers });
@@ -199,7 +200,6 @@ public class GameService
 
         await _eventPublisher.PublishGameActionEvent("PropertyUpgrade", gameId, new
         {
-            PlayerId = playerId,
             PropertyId = propertyId,
             Transactions = transactions
         });
@@ -217,7 +217,6 @@ public class GameService
 
         await _eventPublisher.PublishGameActionEvent("PropertyDowngrade", gameId, new
         {
-            PlayerId = playerId,
             PropertyId = propertyId,
             Transactions = transactions
         });
@@ -235,7 +234,6 @@ public class GameService
 
         await _eventPublisher.PublishGameActionEvent("PropertyMortgage", gameId, new
         {
-            PlayerId = playerId,
             PropertyId = propertyId,
             Transactions = transactions
         });
@@ -253,7 +251,6 @@ public class GameService
 
         await _eventPublisher.PublishGameActionEvent("PropertyUnmortgage", gameId, new
         {
-            PlayerId = playerId,
             PropertyId = propertyId,
             Transactions = transactions
         });

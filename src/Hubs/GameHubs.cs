@@ -10,13 +10,10 @@ namespace MonopolyServer.GameHubs;
 public interface IResponse
 {
     #region Game Control Response
-    Task CreateGameResponse(Guid newGameId);
-    Task PlayerIdAssignmentResponse(Guid playerId);
     Task JoinGameResponse(Guid gameId, List<Player> players);
     Task StartGameResponse(Guid gameId, List<Player> newPlayerOrder);
     Task GameEnded(Guid gameId);
     Task GameOverResponse(Guid gameId, Guid winningPlayerId);
-    Task SpectateGameResponse(GameState game);
     Task SyncGameResponse(GameState game);
 
     #endregion
@@ -33,10 +30,10 @@ public interface IResponse
     // Property stuff
     Task PropertyBoughtResponse(Guid gameId, Guid buyerId, Guid propertyId, List<TransactionInfo> transactions);
     Task PropertySoldResponse(Guid gameId, Guid buyerId, Guid propertyId, List<TransactionInfo> transactions);
-    Task PropertyDowngradeResponse(Guid gameId, Guid buyerId, Guid propertyId, List<TransactionInfo> transactions);
-    Task PropertyUpgradeResponse(Guid gameId, Guid buyerId, Guid propertyId, List<TransactionInfo> transactions);
-    Task PropertyMortgagedResponse(Guid gameId, Guid buyerId, Guid propertyId, List<TransactionInfo> transactions);
-    Task PropertyUnmortgagedResponse(Guid gameId, Guid buyerId, Guid propertyId, List<TransactionInfo> transactions);
+    Task PropertyDowngradeResponse(Guid gameId, Guid propertyId, List<TransactionInfo> transactions);
+    Task PropertyUpgradeResponse(Guid gameId, Guid propertyId, List<TransactionInfo> transactions);
+    Task PropertyMortgagedResponse(Guid gameId, Guid propertyId, List<TransactionInfo> transactions);
+    Task PropertyUnmortgagedResponse(Guid gameId, Guid propertyId, List<TransactionInfo> transactions);
 
     // Trading stuff
     Task InitiateTradeResponse(Guid gameId, Trade trade);
@@ -83,10 +80,10 @@ public class GameHubs : Hub<IResponse>
 
     #region Game Control
     // Use 
-    public async Task JoinGame(Guid gameId, string playerName)
+    public async Task JoinGame(Guid gameId, string playerName, string hexColor)
     {
         var newPlayerId = GetPlayerId();
-        await _gameService.AddPlayerToGame(gameId, playerName, newPlayerId);
+        await _gameService.AddPlayerToGame(gameId, playerName, hexColor, newPlayerId);
 
     }
     // All game is spectate by default
@@ -95,8 +92,6 @@ public class GameHubs : Hub<IResponse>
         GameState game = _gameService.GetGame(gameId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
-
-        await Clients.Caller.SpectateGameResponse(game);
     }
     public async Task SyncGame(Guid gameId)
     {

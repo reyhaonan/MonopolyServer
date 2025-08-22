@@ -775,7 +775,7 @@ public class GameState
 
 
             TransactionsHistory.StartTransaction();
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>
+            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Downgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>
             {
                 countryProperty.DownGradeRentStage();
                 currentPlayer.AddMoney(amount);
