@@ -16,10 +16,11 @@ public class GameState
     private int _diceRoll1 { get; set; } = 0;
     private int _diceRoll2 { get; set; } = 0;
     private int _totalDiceRoll { get; set; } = 0;
-    public int CurrentPlayerIndex { get; private set; } = -1;
+    private int _freeParkingPot { get; set; } = 0;
     #endregion
 
     #region Public property
+    public int CurrentPlayerIndex { get; private set; } = -1;
     [JsonInclude]
     public GameConfig GameConfig;
     [JsonInclude]
@@ -321,8 +322,7 @@ public class GameState
                 _totalDiceRoll = 0; // Player does not move
                 if (currentPlayer.JailTurnsRemaining == 0)
                 {
-                    // Free but no
-                    // TODO: By game config, make em pay 50 bucks
+                    // Free but no movement
                     currentPlayer.FreeFromJail();
                     return;
                 }
@@ -380,11 +380,28 @@ public class GameState
                 break;
             case SpecialSpaceType.IncomeTax:
                 TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 200, true), 
-                    (amount) => currentPlayer.DeductMoney(amount));
+                    (amount) => {
+                        _freeParkingPot += amount;
+                        currentPlayer.DeductMoney(amount);
+                    });
                 break;
             case SpecialSpaceType.LuxuryTax:
                 TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 100, true), 
-                    (amount) => currentPlayer.DeductMoney(amount));
+                    (amount) => {
+                        _freeParkingPot += amount;
+                        currentPlayer.DeductMoney(amount);
+                    });
+                break;
+            case SpecialSpaceType.FreeParking:
+                if (GameConfig.FreeParkingPot)
+                {
+                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, _freeParkingPot, true), 
+                        (amount) => {
+                            currentPlayer.AddMoney(amount);
+                            _freeParkingPot = 0;
+                        });
+                }
+
                 break;
             // Other cases (Chance, CommunityChest, etc.) would go here
             default:
@@ -413,18 +430,18 @@ public class GameState
         int rentValue = 0;
         if (property is CountryProperty countryProperty)
         {
-            // TODO: Add logic for doubled rent on full sets.
-            rentValue = countryProperty.CalculateRent(totalDiceRoll);
+            var groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, owner.Id);
+            rentValue = countryProperty.CalculateRent(diceRoll:totalDiceRoll, doubleBaseRent: groupIsOwnedByPlayer && GameConfig.DoubleBaseRentOnFullColorSet);
         }
         else if (property is UtilityProperty utilityProperty)
         {
             var utilityCount = Board.GetUtilityOwnedByPlayer(ownerId).Count;
-            rentValue = utilityProperty.CalculateRent(totalDiceRoll, 0, utilityCount);
+            rentValue = utilityProperty.CalculateRent(diceRoll:totalDiceRoll, ownerUtilities:utilityCount);
         }
         else if (property is RailroadProperty railroadProperty)
         {
             var railroadCount = Board.GetRailroadOwnedByPlayer(ownerId).Count;
-            rentValue = railroadProperty.CalculateRent(0, railroadCount);
+            rentValue = railroadProperty.CalculateRent(ownerRailroads: railroadCount);
         }
 
         if (rentValue > 0)

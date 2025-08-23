@@ -26,7 +26,7 @@ public class Property : Space
         IsMortgaged = false;
     }
 
-    public virtual int CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0) { return 9999; }
+    public virtual int CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0, bool doubleBaseRent = false) { return 9999; }
 
     public virtual void ResetProperty()
     {

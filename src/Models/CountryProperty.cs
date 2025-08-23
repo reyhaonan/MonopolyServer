@@ -31,10 +31,10 @@ public class CountryProperty : Property
         base.ResetProperty();
     }
 
-    public override int CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
+    public override int CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0, bool doubleBaseRent = false)
     {
         if (IsMortgaged) return 0;
-
+        if (doubleBaseRent && CurrentRentStage == RentStage.Unimproved) return RentScheme[(int)CurrentRentStage] * 2;
         return RentScheme[(int)CurrentRentStage];
     }
 

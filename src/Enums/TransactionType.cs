@@ -12,5 +12,6 @@ public enum TransactionType
     Unmortgage,
     Fine,
     Trade,
+    Reward,
     FreeFromJail,
 }
