@@ -6,10 +6,9 @@ public record GameConfig
     public bool AuctionOnNoPurchase { get; set; } = false;
     public bool FreeParkingPot { get; set; } = false;
     public bool DoubleBaseRentOnFullColorSet { get; set; } = false;
-    public bool AllowCollectRentOnJail { get; set; } = false;
-
-    public bool AllowMortgagingProperties { get; set; } = false;
-    public bool BalancedHousePurchase { get; set; } = false;
+    public bool AllowCollectRentOnJail { get; set; } = false; //yes
+    public bool AllowMortgagingProperties { get; set; } = false; //yes
+    public bool BalancedHousePurchase { get; set; } = true; //yes
     public int StartingMoney { get; set; } = 1500; // yes
 
 }

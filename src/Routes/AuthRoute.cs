@@ -24,11 +24,12 @@ public static class AuthRoute
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
-            Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry);
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry);
             Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(),user.Username, refreshTokenExpiry);
 
             return TypedResults.Ok(new
             {
+                AccessToken = accessToken,
                 User = new UserDTO
                 {
                     Id = user.Id,
@@ -51,11 +52,12 @@ public static class AuthRoute
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
             
-            Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry);
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry);
             Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), username, refreshTokenExpiry);
 
             return TypedResults.Ok(new
             {
+                AccessToken = accessToken,
                 User = new UserDTO
                 {
                     Id = guestId,
@@ -78,7 +80,10 @@ public static class AuthRoute
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var accessToken = Helpers.SetAccessTokenCookies(response, authService, claim.Value, accessTokenExpiry);
 
-            return Results.Ok(accessToken);
+            return Results.Ok(new
+            {
+                AccessToken = accessToken,
+            });
         });
         group.MapPost("/logout", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (HttpResponse response) =>
         {

@@ -277,10 +277,10 @@ public class GameState
     private static (int, int) RollPhysicalDice()
     {
         // Gamba, might wanna look for better randomness?
-        int dice1 = _random.Next(1, 7);
-        int dice2 = _random.Next(1, 7);
-        // int dice1 = 1;
-        // int dice2 = 0;
+        // int dice1 = _random.Next(1, 7);
+        // int dice2 = _random.Next(1, 7);
+        int dice1 = 1;
+        int dice2 = 0;
         return (dice1, dice2);
     }
 
@@ -407,8 +407,9 @@ public class GameState
         var ownerId = property.OwnerId ?? throw new Exception("Property is owned but has no OwnerId.");
         Player owner = GetPlayerById(ownerId) ?? throw new Exception("Owner not found.");
 
-        // TODO: Add check: Rent will not be collected when landing on properties whose owners are in prison.
-        
+        // GameConfig: Rent will not be collected when landing on properties whose owners are in prison.
+        if (owner.IsInJail && !GameConfig.AllowCollectRentOnJail) return;
+
         int rentValue = 0;
         if (property is CountryProperty countryProperty)
         {
@@ -646,7 +647,7 @@ public class GameState
     {
 
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
-
+        if (!GameConfig.AllowMortgagingProperties) throw new InvalidOperationException("Current game does not allow mortgage");
         Property property = Board.GetPropertyById(propertyId);
         Player currentPlayer = GetCurrentPlayer();
 
@@ -684,8 +685,8 @@ public class GameState
     /// <exception cref="InvalidOperationException"></exception>
     public List<TransactionInfo> UnmortgageProperty(Guid propertyId)
     {
-
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart)) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (!GameConfig.AllowMortgagingProperties) throw new InvalidOperationException("Current game does not allow mortgage");
 
         Property property = Board.GetPropertyById(propertyId);
         Player currentPlayer = GetCurrentPlayer();
@@ -726,8 +727,6 @@ public class GameState
         // Group ownership checks
         if (!Board.GroupIsOwnedByPlayer(countryProperty.Group, currentPlayer.Id)) throw new InvalidOperationException("Cannot perform upgrade/downgrade because the player didnt own this group");
 
-        // TODO: Equal spread checks
-
         // Mortgaged property in group checks
         if (!Board.NoMortgagedPropertyInGroup(countryProperty.Group)) throw new InvalidOperationException("Cannot upgrade/downgrade because there is a mortgaged property in the group");
 
@@ -748,14 +747,18 @@ public class GameState
         Property property = Board.GetPropertyById(propertyId);
         if (property is CountryProperty countryProperty)
         {
+            // Broke player alert
+            if (currentPlayer.Money < countryProperty.HouseCost) throw new InvalidOperationException("Not enough money to upgrade this property");
+
             // Generic checks for both upgrade/downgrade
             _checkUpgradeDowngradePermission(countryProperty, currentPlayer);
 
             // Maxxed out bruh wyd
             if (countryProperty.CurrentRentStage == RentStage.Hotel) throw new InvalidOperationException("Cannot upgrade more in this property");
 
-            // Broke player alert
-            if (currentPlayer.Money < countryProperty.HouseCost) throw new InvalidOperationException("Not enough money to upgrade this property");
+            // Balanced purchase checks
+            if (GameConfig.BalancedHousePurchase && Board.LowestRentStateInGroup(countryProperty.Group) != countryProperty.CurrentRentStage) throw new InvalidOperationException("Cannot purchase unbalanced house");
+
 
             TransactionsHistory.StartTransaction();
             TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseCost, true), (amount) =>
@@ -788,7 +791,9 @@ public class GameState
             _checkUpgradeDowngradePermission(countryProperty, currentPlayer);
 
             if (countryProperty.CurrentRentStage == RentStage.Unimproved) throw new InvalidOperationException("Cannot downgrade more in this property");
-
+            
+            // Balanced purchase checks
+            if (GameConfig.BalancedHousePurchase && Board.HighestRentStateInGroup(countryProperty.Group) != countryProperty.CurrentRentStage) throw new InvalidOperationException("Cannot purchase unbalanced house");
 
             TransactionsHistory.StartTransaction();
             TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Downgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>

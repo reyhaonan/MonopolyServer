@@ -4,18 +4,10 @@ using MonopolyServer.Services;
 using MonopolyServer.Routes;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using MonopolyServer.Services.Auth;
 using MonopolyServer.Database;
 using MonopolyServer.Repositories;
 using MonopolyServer.Utils;
-using Confluent.Kafka;
-using Microsoft.AspNetCore.Http.HttpResults;
-using System.Net;
-using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure SignalR with Newtonsoft.Json to handle polymorphic types
@@ -83,7 +75,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = context =>
             {
-                context.Token = context.Request.Cookies["AccessToken"];
+                var token = context.Request.Cookies["AccessToken"];
+                context.Token = token;
                 return Task.CompletedTask;
             },
         }; 
@@ -96,7 +89,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = context =>
             {
-                context.Token = context.Request.Cookies["RefreshToken"];;
+                context.Token = context.Request.Cookies["RefreshToken"];
                 return Task.CompletedTask;
             }
         };
@@ -113,29 +106,48 @@ app.UseRouting();
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 
+var GAME_HUBS_URL="/gameHubs"; 
+
 app.Use((context, next) => {
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        return next(context);
+    }
+    if (context.Request.Path.StartsWithSegments(GAME_HUBS_URL))
+    {
+        return next(context);
+    }
 
     var endpoint = context.GetEndpoint();
 
     var scheme = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.AuthenticationSchemes;
     var typeId = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.TypeId;
+
     //  XSRF-TOKEN Checks if authenticated and auth scheme used is default
     if (scheme != "RefreshTokenScheme" && typeId != null && context.User.Identity.IsAuthenticated)
     {
-        string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
-        string? jwtXsrfToken = context.Request.Cookies.FirstOrDefault(e => e.Key == "XSRF-TOKEN").Value;
+        if (context.Request.Cookies.TryGetValue("XSRF-TOKEN", out var jwtXsrfToken))
+        {
+            string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
 
-        if (string.IsNullOrEmpty(headerXsrfToken) || string.IsNullOrEmpty(jwtXsrfToken) || headerXsrfToken != jwtXsrfToken)
+            if (string.IsNullOrEmpty(headerXsrfToken) || headerXsrfToken != jwtXsrfToken)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.WriteAsync("Invalid XSRF token");
+                return Task.CompletedTask;
+            }
+        }
+        else
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.WriteAsync("Invalid XSRF token");
+            context.Response.WriteAsync("Missing XSRF token");
             return Task.CompletedTask;
         }
     }
     return next(context);
 });
 
-app.MapHub<GameHubs>("/gameHubs");
+app.MapHub<GameHubs>(GAME_HUBS_URL);
 AuthRoute.Map(app);
 GameRoute.Map(app);
 

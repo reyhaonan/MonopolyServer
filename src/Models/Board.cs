@@ -95,5 +95,17 @@ public class Board
         var properties = GetPropertiesInGroup(group);
         return properties.All(property => property.CurrentRentStage == RentStage.Unimproved);
     }
+    public RentStage HighestRentStateInGroup(ColorGroup group)
+    {
+        var properties = GetPropertiesInGroup(group);
+        var maxProperty = properties.MaxBy(p => p.CurrentRentStage) ?? throw new Exception("No max?? like how");
+        return maxProperty.CurrentRentStage;
+    }
+    public RentStage LowestRentStateInGroup(ColorGroup group)
+    {
+        var properties = GetPropertiesInGroup(group);
+        var maxProperty = properties.MinBy(p => p.CurrentRentStage) ?? throw new Exception("No min?? like how");
+        return maxProperty.CurrentRentStage;
+    }
 }
 

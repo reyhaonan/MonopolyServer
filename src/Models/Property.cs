@@ -21,7 +21,7 @@ public class Property : Space
     {
         PurchasePrice = price;
         MortgageValue = price / 2;
-        UnmortgageCost = price * .6m;
+        UnmortgageCost = (int)Math.Floor(price * .6m);
         OwnerId = null;
         IsMortgaged = false;
     }
