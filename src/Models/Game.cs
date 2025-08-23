@@ -7,7 +7,7 @@ namespace MonopolyServer.Models;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
-public class GameState
+public class Game
 {
     const int SALARY_AMOUNT = 200;
     #region Private property
@@ -43,11 +43,11 @@ public class GameState
     #endregion
 
     /// <summary>
-    /// Constructor for GameState. Initializes a new game with a unique ID,
+    /// Constructor for Game. Initializes a new game with a unique ID,
     /// creates a new board, sets the initial game phase to WaitingForPlayers,
     /// and initializes the card decks.
     /// </summary>
-    public GameState(ILogger<GameState> logger)
+    public Game(ILogger<Game> logger)
     {
         GameConfig = new GameConfig();
         _logger = logger;
@@ -993,7 +993,7 @@ public class GameState
 
     #endregion
 
-    ~GameState()
+    ~Game()
     {
         _logger.LogWarning($"Destroying game: {GameId}");
     }

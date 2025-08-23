@@ -7,7 +7,7 @@ namespace MonopolyServer.Services;
 
 public class GameManager
 {
-    private static readonly ConcurrentDictionary<Guid, GameState> _activeGames = new();
+    private static readonly ConcurrentDictionary<Guid, Game> _activeGames = new();
     private readonly IEventPublisher _eventPublisher;
     private readonly ILogger<GameManager> _logger;
     private readonly ILoggerFactory _loggerFactory;
@@ -24,9 +24,9 @@ public class GameManager
         return _activeGames.TryRemove(gameId, out _);
     }
 
-    public GameState GetGame(Guid gameId)
+    public Game GetGame(Guid gameId)
     {
-        GameState? game;
+        Game? game;
         if (!_activeGames.TryGetValue(gameId, out game))
         {
             throw new InvalidOperationException($"Game with GUID '{gameId}' not found in On Going Games");
@@ -36,7 +36,7 @@ public class GameManager
 
     public Guid CreateNewGame()
     {
-        var newGame = new GameState(_loggerFactory.CreateLogger<GameState>());
+        var newGame = new Game(_loggerFactory.CreateLogger<Game>());
         Guid gameId = newGame.GameId;
         _activeGames.TryAdd(gameId, newGame);
 
@@ -46,7 +46,7 @@ public class GameManager
 
     public async Task<Player> AddPlayerToGame(Guid gameId, string playerName, string hexColor, Guid newPlayerId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
         if (game.ActivePlayers.Any(p => p.Id == newPlayerId)) throw new InvalidOperationException("Player already joined the game");
         if (game.ActivePlayers.Any(p => p.HexColor == hexColor)) throw new InvalidOperationException("Player with the same color already exist");
@@ -62,7 +62,7 @@ public class GameManager
 
     public async Task StartGame(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         
         var newPlayerOrder = game.StartGame();
@@ -71,7 +71,7 @@ public class GameManager
     }
     public async Task UpdateGameConfig(Guid gameId, Guid playerId, GameConfig newGameConfig)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         game.UpdateGameConfig(newGameConfig);
@@ -82,7 +82,7 @@ public class GameManager
     
     public async Task ProcessDiceRoll(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.  current active are: {game.GetCurrentPlayer().Id}");
@@ -103,7 +103,7 @@ public class GameManager
     
     public async Task EndTurn(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
@@ -118,7 +118,7 @@ public class GameManager
     public async Task PayToGetOutOfJail(Guid gameId, Guid playerId)
     {
 
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
@@ -136,7 +136,7 @@ public class GameManager
     public async Task UseGetOutOfJailCard(Guid gameId, Guid playerId)
     {
 
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
@@ -151,7 +151,7 @@ public class GameManager
 
     public async Task DeclareBankcruptcy(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         if (game.ActivePlayers.Count <= 1) throw new InvalidOperationException("Cannot declare bankcruptcy when you are the winner");
@@ -173,7 +173,7 @@ public class GameManager
     
     public async Task BuyProperty(Guid gameId, Guid playerId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         Player currentPlayer = game.GetCurrentPlayer();
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
@@ -192,7 +192,7 @@ public class GameManager
     
     public async Task SellProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         Player currentPlayer = game.GetCurrentPlayer();
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
@@ -210,7 +210,7 @@ public class GameManager
 
     public async Task UpgradeProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         Player currentPlayer = game.GetCurrentPlayer();
 
@@ -228,7 +228,7 @@ public class GameManager
     
     public async Task DowngradeProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         Player currentPlayer = game.GetCurrentPlayer();
 
@@ -246,7 +246,7 @@ public class GameManager
     
     public async Task MortgageProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         Player currentPlayer = game.GetCurrentPlayer();
 
@@ -264,7 +264,7 @@ public class GameManager
     
     public async Task UnmortgageProperty(Guid gameId, Guid playerId, Guid propertyId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
         Player currentPlayer = game.GetCurrentPlayer();
 
@@ -283,7 +283,7 @@ public class GameManager
     
     public async Task InitiateTrade(Guid gameId, Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(initiatorId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         if(initiatorId.Equals(recipientId))throw new InvalidOperationException("Cannot trade with yourself");
@@ -300,7 +300,7 @@ public class GameManager
     
     public async Task AcceptTrade(Guid gameId, Guid recipientId, Guid tradeId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(recipientId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         var (transactions, trade) = game.AcceptTrade(tradeId, recipientId);
@@ -317,7 +317,7 @@ public class GameManager
     
     public async Task RejectTrade(Guid gameId, Guid recipientId, Guid tradeId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(recipientId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         game.RejectTrade(tradeId, recipientId);
@@ -330,7 +330,7 @@ public class GameManager
     }
     public async Task CancelTrade(Guid gameId, Guid initiatorId, Guid tradeId)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(initiatorId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         game.CancelTrade(tradeId, initiatorId);
@@ -344,7 +344,7 @@ public class GameManager
 
     public async Task NegotiateTrade(Guid gameId, Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
-        GameState game = GetGame(gameId);
+        Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(negotiatorId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         Trade trade = game.NegotiateTrade(negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
