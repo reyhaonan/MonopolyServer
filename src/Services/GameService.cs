@@ -19,6 +19,11 @@ public class GameService
         _loggerFactory = loggerFactory;
     }
 
+    public bool DestroyGame(Guid gameId)
+    {
+        return _activeGames.TryRemove(gameId, out _);
+    }
+
     public GameState GetGame(Guid gameId)
     {
         GameState? game;

@@ -2,7 +2,9 @@ public record GameConfig
 {
     public int MaxPlayers { get; init; } = 8;
     public int MinPlayers { get; init; } = 2;
-    public int JailFine { get; init; } = 50;// yes
+    public int JailFine { get; init; } = 50;
+    public int IncomeTax { get; init; } = 200;
+    public int LuxuryTax { get; init; } = 100;
     public bool FreeParkingPot { get; set; } = false; 
     public bool DoubleBaseRentOnFullColorSet { get; set; } = false; 
     public bool AllowCollectRentOnJail { get; set; } = true; 

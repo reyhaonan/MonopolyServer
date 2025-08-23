@@ -242,7 +242,7 @@ public class GameState
         currentPlayer.UseGetOutOfJailFreeCard();
         currentPlayer.FreeFromJail();
 
-        
+
         ChangeGamePhase(GamePhase.PostLandingActions);
     }
     #endregion
@@ -276,7 +276,7 @@ public class GameState
 
     public void UpdateGameConfig(GameConfig newGameConfig)
     {
-        if(CurrentPhase != GamePhase.WaitingForPlayers)throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        if (CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
         GameConfig.FreeParkingPot = newGameConfig.FreeParkingPot;
         GameConfig.DoubleBaseRentOnFullColorSet = newGameConfig.DoubleBaseRentOnFullColorSet;
         GameConfig.AllowCollectRentOnJail = newGameConfig.AllowCollectRentOnJail;
@@ -284,8 +284,8 @@ public class GameState
         GameConfig.BalancedHousePurchase = newGameConfig.BalancedHousePurchase;
         GameConfig.StartingMoney = Math.Clamp(newGameConfig.StartingMoney, 500, 3000);
     }
-    
-    
+
+
     #region Dice rolling handling
     /// <summary>
     /// Simulates the physical rolling of two dice.
@@ -394,15 +394,17 @@ public class GameState
                 currentPlayer.GoToJail();
                 break;
             case SpecialSpaceType.IncomeTax:
-                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 200, true), 
-                    (amount) => {
+                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, GameConfig.IncomeTax, true),
+                    (amount) =>
+                    {
                         _freeParkingPot += amount;
                         currentPlayer.DeductMoney(amount);
                     });
                 break;
             case SpecialSpaceType.LuxuryTax:
-                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, 100, true), 
-                    (amount) => {
+                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, GameConfig.LuxuryTax, true),
+                    (amount) =>
+                    {
                         _freeParkingPot += amount;
                         currentPlayer.DeductMoney(amount);
                     });
@@ -410,8 +412,9 @@ public class GameState
             case SpecialSpaceType.FreeParking:
                 if (GameConfig.FreeParkingPot)
                 {
-                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, _freeParkingPot, true), 
-                        (amount) => {
+                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, _freeParkingPot, true),
+                        (amount) =>
+                        {
                             currentPlayer.AddMoney(amount);
                             _freeParkingPot = 0;
                         });
@@ -451,7 +454,7 @@ public class GameState
         else if (property is UtilityProperty utilityProperty)
         {
             var utilityCount = Board.GetUtilityOwnedByPlayer(ownerId).Count;
-            rentValue = utilityProperty.CalculateRent(diceRoll:totalDiceRoll, ownerUtilities:utilityCount);
+            rentValue = utilityProperty.CalculateRent(diceRoll: totalDiceRoll, ownerUtilities: utilityCount);
         }
         else if (property is RailroadProperty railroadProperty)
         {
@@ -511,7 +514,7 @@ public class GameState
             Roll1 = _diceRoll1,
             Roll2 = _diceRoll2,
             TotalRoll = _totalDiceRoll
-            
+
         };
         var playerStateInfo = new RollResult.PlayerStateInfo
         {
@@ -554,7 +557,7 @@ public class GameState
         return NextPlayer();
     }
 
-    public (int currentPlayerIndex, bool isGameOver ) DeclareBankcruptcy(Guid playerId)
+    public (int currentPlayerIndex, bool isGameOver) DeclareBankcruptcy(Guid playerId)
     {
         Player bankcruptPlayer = GetPlayerById(playerId) ?? throw new InvalidOperationException("Player not found");
 
@@ -592,9 +595,9 @@ public class GameState
     {
         Player currentPlayer = GetCurrentPlayer();
         // Action is only available on: [PostLandingActions, or on consecutive double and PlayerTurnStart]
-        if (!CurrentPhase.Equals(GamePhase.PostLandingActions)&&(!CurrentPhase.Equals(GamePhase.PlayerTurnStart) || currentPlayer.ConsecutiveDoubles <= 0))
+        if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && (!CurrentPhase.Equals(GamePhase.PlayerTurnStart) || currentPlayer.ConsecutiveDoubles <= 0))
             throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
-        
+
 
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition);
 
@@ -823,7 +826,7 @@ public class GameState
             _checkUpgradeDowngradePermission(countryProperty, currentPlayer);
 
             if (countryProperty.CurrentRentStage == RentStage.Unimproved) throw new InvalidOperationException("Cannot downgrade more in this property");
-            
+
             // Balanced purchase checks
             if (GameConfig.BalancedHousePurchase && Board.HighestRentStateInGroup(countryProperty.Group) != countryProperty.CurrentRentStage) throw new InvalidOperationException("Cannot purchase unbalanced house");
 
@@ -855,7 +858,8 @@ public class GameState
         if (!recipientPropertyIsValid) throw new InvalidOperationException("Property Counter Offer is invalid");
 
         // Verify if the property is a country, this property or other in the same group doesnt have house
-        foreach(Guid propertyId in propertyOffer) {
+        foreach (Guid propertyId in propertyOffer)
+        {
             var property = Board.GetPropertyById(propertyId);
             if (property is CountryProperty countryProperty)
             {
@@ -867,7 +871,8 @@ public class GameState
             }
         }
         // Verify if the property is a country, this property or other in the same group doesnt have house
-        foreach(Guid propertyId in propertyCounterOffer) {
+        foreach (Guid propertyId in propertyCounterOffer)
+        {
             var property = Board.GetPropertyById(propertyId);
             if (property is CountryProperty countryProperty)
             {
@@ -904,7 +909,7 @@ public class GameState
         Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new Exception("Initiator not found");
         Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new Exception("Recipient not found");
 
-        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer,trade.MoneyFromInitiator, trade.MoneyFromRecipient);
+        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient);
 
         // Perform money transfer
         TransactionsHistory.StartTransaction();
@@ -949,7 +954,7 @@ public class GameState
         {
             property.ChangeOwner(recipientPlayer.Id);
         }
-        
+
         ActiveTrades.Remove(trade);
 
         return (TransactionsHistory.CommitTransaction(), trade);
@@ -979,13 +984,17 @@ public class GameState
         Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new Exception("Initiator not found");
         Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new Exception("Recipient not found");
 
-        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer,trade.MoneyFromInitiator, trade.MoneyFromRecipient);
+        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient);
 
         trade.Negotiate(propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
 
         return trade;
     }
-    
+
     #endregion
 
+    ~GameState()
+    {
+        _logger.LogWarning($"Destroying game: {GameId}");
+    }
 }

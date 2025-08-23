@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using MonopolyServer.Models;
@@ -51,6 +53,9 @@ public class GameHubs : Hub<IResponse>
     private readonly GameService _gameService;
 
     private readonly ILogger<GameHubs> _logger;
+
+    private static ConcurrentDictionary<string, Guid> _connectionDict { get; set; } = new();
+
     public GameHubs(GameService gameService, ILogger<GameHubs> logger)
     {
         _gameService = gameService;
@@ -76,6 +81,14 @@ public class GameHubs : Hub<IResponse>
         _logger.LogInformation($"Client disconnected: {Context.ConnectionId}, Exception: {exception?.ToString()}");
 
 
+        _connectionDict.TryRemove(Context.ConnectionId, out Guid gameId);
+
+        _logger.LogInformation($"Waow {JsonSerializer.Serialize(_connectionDict)}");
+        if (!_connectionDict.Any(c => c.Value == gameId))
+        {
+            _gameService.DestroyGame(gameId);
+        }
+        
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -91,6 +104,8 @@ public class GameHubs : Hub<IResponse>
     public async Task SpectateGame(Guid gameId)
     {
         _gameService.GetGame(gameId);
+        _logger.LogInformation($"Add conn {Context.ConnectionId} {gameId}");
+        _connectionDict.TryAdd(Context.ConnectionId, gameId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
     }
