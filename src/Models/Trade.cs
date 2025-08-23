@@ -20,12 +20,12 @@ public class Trade
     public List<Guid> PropertyCounterOffer { get; private set; }
 
     [JsonInclude]
-    public decimal MoneyFromInitiator { get; private set; }
+    public int MoneyFromInitiator { get; private set; }
     [JsonInclude]
-    public decimal MoneyFromRecipient { get; private set; }
+    public int MoneyFromRecipient { get; private set; }
 
     // Private helper method to set all trade details
-    private void SetTradeDetails(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    private void SetTradeDetails(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         InitiatorId = initiatorId;
         RecipientId = recipientId;
@@ -35,14 +35,14 @@ public class Trade
         MoneyFromRecipient = moneyFromRecipient;
     }
 
-    public Trade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public Trade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         Id = Guid.NewGuid();
         SetTradeDetails(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
         NegotiateCount = 0;
     }
 
-    public void Negotiate(List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public void Negotiate(List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         // For negotiation, swap the initiator and recipient
         SetTradeDetails(RecipientId, InitiatorId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);

@@ -5,7 +5,7 @@ using MonopolyServer.Enums;
 namespace MonopolyServer.Models;
 
 [method: JsonConstructor]
-public struct TransactionInfo(TransactionType transactionType,Guid? senderId, Guid? receiverId, decimal amount, bool isTransactionWithBank)
+public struct TransactionInfo(TransactionType transactionType,Guid? senderId, Guid? receiverId, int amount, bool isTransactionWithBank)
 {
     [JsonInclude]
     public TransactionType TransactionType = transactionType;
@@ -14,7 +14,7 @@ public struct TransactionInfo(TransactionType transactionType,Guid? senderId, Gu
     [JsonInclude]
     public Guid? ReceiverId = receiverId;
     [JsonInclude]
-    public decimal Amount = amount;
+    public int Amount = amount;
     [JsonInclude]
     public bool IsTransactionWithBank = isTransactionWithBank;
 }

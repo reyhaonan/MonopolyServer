@@ -1,15 +1,15 @@
 public record GameConfig
 {
-    public int MaxPlayers { get; init; } = 8;
-    public int MinPlayers { get; init; } = 2;
-    public int JailFine { get; init; } = 50;
-    public bool AuctionOnNoPurchase { get; init; } = true;
-    public bool FreeParkingPot { get; init; } = true;
-    public bool DoubleBaseRentOnFullColorSet { get; init; } = true;
-    public bool AllowCollectRentOnJail { get; init; } = true;
+    public int MaxPlayers { get; init; } = 8;//yes
+    public int MinPlayers { get; init; } = 2;//yes
+    public int JailFine { get; init; } = 50;// yes
+    public bool AuctionOnNoPurchase { get; set; } = false;
+    public bool FreeParkingPot { get; set; } = false;
+    public bool DoubleBaseRentOnFullColorSet { get; set; } = false;
+    public bool AllowCollectRentOnJail { get; set; } = false;
 
-    public bool AllowMortgagingProperties { get; init; } = true;
-    public int StartingMoney { get; init; } = 1500;
-    public bool BalancedHousePurchase { get; init; } = true;
+    public bool AllowMortgagingProperties { get; set; } = false;
+    public bool BalancedHousePurchase { get; set; } = false;
+    public int StartingMoney { get; set; } = 1500; // yes
 
 }

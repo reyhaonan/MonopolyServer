@@ -5,23 +5,23 @@ using MonopolyServer.Utils;
 namespace MonopolyServer.Models;
 
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 public class GameState
 {
-    const decimal SALARY_AMOUNT = 200;
+    const int SALARY_AMOUNT = 200;
     #region Private property
     private readonly ILogger _logger;
     private static readonly Random _random = new Random();
     private int _diceRoll1 { get; set; } = 0;
     private int _diceRoll2 { get; set; } = 0;
     private int _totalDiceRoll { get; set; } = 0;
-    // private GameConfig _gameConfig;
     public int CurrentPlayerIndex { get; private set; } = -1;
     #endregion
 
     #region Public property
+    [JsonInclude]
+    public GameConfig GameConfig;
     [JsonInclude]
     public Guid GameId { get; init; }
     // List of all active players(still playing)
@@ -48,6 +48,7 @@ public class GameState
     /// </summary>
     public GameState(ILogger<GameState> logger)
     {
+        GameConfig = new GameConfig();
         _logger = logger;
         GameId = Guid.NewGuid();
 
@@ -93,10 +94,14 @@ public class GameState
     /// (all players) and the ActivePlayers list (players still in the game).
     /// </summary>
     /// <param name="newPlayer">The new player to add to the game</param>
-    public void AddPlayer(Player newPlayer)
+    public Player AddPlayer(string playerName, string hexColor, Guid newPlayerId)
     {
-        // TODO: [GameConfig] Adjust how much money players start the game with
+        if (ActivePlayers.Count >= GameConfig.MaxPlayers) throw new InvalidOperationException("Room is full");
+        var newPlayer = new Player(playerName, hexColor, newPlayerId);
+
         ActivePlayers.Add(newPlayer);
+
+        return newPlayer;
     }
 
     /// <summary>
@@ -189,15 +194,13 @@ public class GameState
             throw new InvalidOperationException("Player is not in jail");
         }
 
-        const decimal JAIL_FEE = 50;
-
-        if (currentPlayer.Money < JAIL_FEE)
+        if (currentPlayer.Money < GameConfig.JailFine)
         {
             throw new InvalidOperationException("Not enough money to pay the jail fee");
         }
 
         TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.FreeFromJail, currentPlayer.Id, null, JAIL_FEE, true), (amount) =>
+        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.FreeFromJail, currentPlayer.Id, null, GameConfig.JailFine, true), (amount) =>
         {
             currentPlayer.DeductMoney(amount);
             currentPlayer.FreeFromJail();
@@ -248,6 +251,8 @@ public class GameState
     /// <exception cref="Exception">Thrown if the game has already started</exception>
     public List<Player> StartGame()
     {
+        
+        if (ActivePlayers.Count < GameConfig.MinPlayers) throw new InvalidOperationException("Cannot start a game with only one player");
         CurrentPlayerIndex = 0;
 
         ActivePlayers = ActivePlayers.OrderBy(_ => _random.Next()).ToList();
@@ -255,6 +260,12 @@ public class GameState
         if (CurrentPhase == GamePhase.WaitingForPlayers) ChangeGamePhase(GamePhase.PlayerTurnStart);
 
         else throw new InvalidOperationException($"Game {GameId} already started");
+
+        // Correct the starting money
+        foreach (Player player in ActivePlayers)
+        {
+            player.setMoney(GameConfig.StartingMoney);
+        }
 
         return ActivePlayers;
     }
@@ -398,7 +409,7 @@ public class GameState
 
         // TODO: Add check: Rent will not be collected when landing on properties whose owners are in prison.
         
-        decimal rentValue = 0;
+        int rentValue = 0;
         if (property is CountryProperty countryProperty)
         {
             // TODO: Add logic for doubled rent on full sets.
@@ -611,7 +622,7 @@ public class GameState
         }
 
         // You can sell mortgaged property, good luck getting any money though lol
-        decimal sellValue = property.IsMortgaged ? 0 : property.MortgageValue;
+        int sellValue = property.IsMortgaged ? 0 : property.MortgageValue;
 
         TransactionsHistory.StartTransaction();
         TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Sell, null, currentPlayer.Id, sellValue, true), (amount) =>
@@ -792,7 +803,7 @@ public class GameState
     }
     #endregion
     #region Trade
-    private void _validateTrade(Player initiatorPlayer, Player recipientPlayer, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    private void _validateTrade(Player initiatorPlayer, Player recipientPlayer, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         // Verify initiator money
         if (initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator money is invalid");
@@ -832,7 +843,7 @@ public class GameState
         }
 
     }
-    public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         Player initiatorPlayer = GetPlayerById(initiatorId) ?? throw new Exception("Invalid initiator player");
         Player recipientPlayer = GetPlayerById(recipientId) ?? throw new Exception("Invalid recipipent player");
@@ -922,7 +933,7 @@ public class GameState
 
         ActiveTrades.Remove(trade);
     }
-    public Trade NegotiateTrade(Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public Trade NegotiateTrade(Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade");
 

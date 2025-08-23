@@ -10,7 +10,7 @@ public class Player
     [JsonInclude]
     public string Name { get; init; }
     [JsonInclude]
-    public decimal Money { get; private set; }
+    public int Money { get; private set; }
     [JsonInclude]
     public int CurrentPosition { get; private set; } // 0-39, representing board spaces
     [JsonInclude]
@@ -44,10 +44,14 @@ public class Player
     }
 
     #region Money
-    public void AddMoney(decimal amount) => Money += amount;
-    public void DeductMoney(decimal amount)
+    public void AddMoney(int amount) => Money += amount;
+    public void DeductMoney(int amount)
     {
         Money -= amount;
+    }
+    public void setMoney(int amount)
+    {
+        Money = amount;
     }
     #endregion
 

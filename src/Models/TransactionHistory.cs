@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace MonopolyServer.Models;
 
 
-public delegate void TransactionCallback(decimal amount);
+public delegate void TransactionCallback(int amount);
 
 public class TransactionHistory
 {

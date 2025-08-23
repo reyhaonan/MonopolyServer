@@ -45,9 +45,8 @@ public class GameService
         if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
         if (game.ActivePlayers.Any(p => p.Id == newPlayerId)) throw new InvalidOperationException("Player already joined the game");
         if (game.ActivePlayers.Any(p => p.HexColor == hexColor)) throw new InvalidOperationException("Player with the same color already exist");
-        if (game.ActivePlayers.Count >= 8) throw new InvalidOperationException("Room is full");
-        Player newPlayer = new Player(playerName, hexColor, newPlayerId);
-        game.AddPlayer(newPlayer);
+        
+        var newPlayer = game.AddPlayer(playerName, hexColor, newPlayerId);
 
         await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameId, new { Players = game.ActivePlayers });
 
@@ -59,7 +58,7 @@ public class GameService
     public async Task StartGame(Guid gameId)
     {
         GameState game = GetGame(gameId);
-        if (game.ActivePlayers.Count <= 1) throw new InvalidOperationException("Cannot start a game with only one player");
+        
         var newPlayerOrder = game.StartGame();
 
         await _eventPublisher.PublishGameControlEvent("GameStart", gameId, new { NewPlayerOrder = newPlayerOrder });
@@ -256,7 +255,7 @@ public class GameService
     }
 
     
-    public async Task InitiateTrade(Guid gameId, Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public async Task InitiateTrade(Guid gameId, Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         GameState game = GetGame(gameId);
 
@@ -313,7 +312,7 @@ public class GameService
 
     }
 
-    public async Task NegotiateTrade(Guid gameId, Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public async Task NegotiateTrade(Guid gameId, Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         GameState game = GetGame(gameId);
 

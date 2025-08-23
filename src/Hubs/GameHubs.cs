@@ -168,12 +168,12 @@ public class GameHubs : Hub<IResponse>
     }
 
     // Trade stuff     
-    public async Task InitiateTrade(Guid gameId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public async Task InitiateTrade(Guid gameId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         var initiatorId = GetPlayerId();
         await _gameService.InitiateTrade(gameId, initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
     }
-    public async Task NegotiateTrade(Guid gameId,Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, decimal moneyFromInitiator, decimal moneyFromRecipient)
+    public async Task NegotiateTrade(Guid gameId,Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         var negotiatorId = GetPlayerId();
         await _gameService.NegotiateTrade(gameId, negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);

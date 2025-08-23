@@ -6,7 +6,7 @@ public class UtilityProperty : Property
     {
     }
 
-    public override decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
+    public override int CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
     {
         if (IsMortgaged) return 0;
 

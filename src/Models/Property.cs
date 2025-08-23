@@ -5,18 +5,18 @@ namespace MonopolyServer.Models;
 public class Property : Space
 {
     [JsonInclude]
-    public decimal PurchasePrice { get; init; }
+    public int PurchasePrice { get; init; }
     // This is also the sell price, if property is mortgaged, then sold. Player wont get any money
     [JsonInclude]
-    public decimal MortgageValue { get; init; } // 50% of purchase price
+    public int MortgageValue { get; init; } // 50% of purchase price
     [JsonInclude]
-    public decimal UnmortgageCost { get; init; } // 60% of purchase price
+    public int UnmortgageCost { get; init; } // 60% of purchase price
     [JsonInclude]
     public Guid? OwnerId { get; private set; }
     [JsonInclude]
     public bool IsMortgaged { get; private set; }
 
-    protected Property(string name, int boardPosition, decimal price)
+    protected Property(string name, int boardPosition, int price)
         : base(name, boardPosition)
     {
         PurchasePrice = price;
@@ -26,7 +26,7 @@ public class Property : Space
         IsMortgaged = false;
     }
 
-    public virtual decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0) { return 9999; }
+    public virtual int CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0) { return 9999; }
 
     public virtual void ResetProperty()
     {
