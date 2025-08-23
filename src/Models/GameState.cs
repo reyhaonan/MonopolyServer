@@ -122,6 +122,10 @@ public class GameState
     {
         return ActivePlayers.FirstOrDefault(p => p.Id == playerId);
     }
+    public bool PlayerIsInGame(Guid playerId)
+    {
+        return ActivePlayers.Any(p => p.Id == playerId);
+    }
     #endregion
 
     /// <summary>

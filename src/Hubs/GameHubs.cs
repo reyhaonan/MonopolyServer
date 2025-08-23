@@ -90,7 +90,7 @@ public class GameHubs : Hub<IResponse>
     // All game is spectate by default
     public async Task SpectateGame(Guid gameId)
     {
-        GameState game = _gameService.GetGame(gameId);
+        _gameService.GetGame(gameId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
     }
@@ -103,11 +103,13 @@ public class GameHubs : Hub<IResponse>
 
     public async Task StartGame(Guid gameId)
     {
-        await _gameService.StartGame(gameId);
+        var playerId = GetPlayerId();
+        await _gameService.StartGame(gameId, playerId);
     }
     public async Task UpdateGameConfig(Guid gameId, GameConfig newGameConfig)
     {
-        await _gameService.UpdateGameConfig(gameId, newGameConfig);
+        var playerId = GetPlayerId();
+        await _gameService.UpdateGameConfig(gameId,playerId, newGameConfig);
     }
     #endregion
 
