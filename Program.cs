@@ -21,7 +21,7 @@ builder.Services.AddDbContext<MonopolyDbContext>();
 
 // Register event publisher
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
-builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<GameManager>();
 
 builder.Services.AddScoped<AuthService>();
 

@@ -50,15 +50,15 @@ public interface IResponse
 [Authorize]
 public class GameHubs : Hub<IResponse>
 {
-    private readonly GameService _gameService;
+    private readonly GameManager _gameManager;
 
     private readonly ILogger<GameHubs> _logger;
 
     private static readonly ConcurrentDictionary<string, Guid> _connectionDict = new();
 
-    public GameHubs(GameService gameService, ILogger<GameHubs> logger)
+    public GameHubs(GameManager gameManager, ILogger<GameHubs> logger)
     {
-        _gameService = gameService;
+        _gameManager = gameManager;
         _logger = logger;
     }
 
@@ -86,7 +86,7 @@ public class GameHubs : Hub<IResponse>
         _logger.LogInformation($"Waow {JsonSerializer.Serialize(_connectionDict)}");
         if (!_connectionDict.Any(c => c.Value == gameId))
         {
-            _gameService.DestroyGame(gameId);
+            _gameManager.DestroyGame(gameId);
         }
         
         await base.OnDisconnectedAsync(exception);
@@ -97,13 +97,13 @@ public class GameHubs : Hub<IResponse>
     public async Task JoinGame(Guid gameId, string playerName, string hexColor)
     {
         var newPlayerId = GetPlayerId();
-        await _gameService.AddPlayerToGame(gameId, playerName, hexColor, newPlayerId);
+        await _gameManager.AddPlayerToGame(gameId, playerName, hexColor, newPlayerId);
 
     }
     // All game is spectate by default
     public async Task SpectateGame(Guid gameId)
     {
-        _gameService.GetGame(gameId);
+        _gameManager.GetGame(gameId);
         _logger.LogInformation($"Add conn {Context.ConnectionId} {gameId}");
         _connectionDict.TryAdd(Context.ConnectionId, gameId);
 
@@ -111,7 +111,7 @@ public class GameHubs : Hub<IResponse>
     }
     public async Task SyncGame(Guid gameId)
     {
-        GameState game = _gameService.GetGame(gameId);
+        GameState game = _gameManager.GetGame(gameId);
 
         await Clients.Caller.SyncGameResponse(game);
     }
@@ -119,12 +119,12 @@ public class GameHubs : Hub<IResponse>
     public async Task StartGame(Guid gameId)
     {
         var playerId = GetPlayerId();
-        await _gameService.StartGame(gameId, playerId);
+        await _gameManager.StartGame(gameId, playerId);
     }
     public async Task UpdateGameConfig(Guid gameId, GameConfig newGameConfig)
     {
         var playerId = GetPlayerId();
-        await _gameService.UpdateGameConfig(gameId,playerId, newGameConfig);
+        await _gameManager.UpdateGameConfig(gameId,playerId, newGameConfig);
     }
     #endregion
 
@@ -133,87 +133,87 @@ public class GameHubs : Hub<IResponse>
     public async Task RollDice(Guid gameId)
     {
         var playerId = GetPlayerId();
-        await _gameService.ProcessDiceRoll(gameId, playerId);
+        await _gameManager.ProcessDiceRoll(gameId, playerId);
     }
     public async Task EndTurn(Guid gameId)
     {
         var playerId = GetPlayerId();
-        await _gameService.EndTurn(gameId, playerId);
+        await _gameManager.EndTurn(gameId, playerId);
     }
     public async Task DeclareBankcruptcy(Guid gameId)
     {
         var playerId = GetPlayerId();
-        await _gameService.DeclareBankcruptcy(gameId, playerId);
+        await _gameManager.DeclareBankcruptcy(gameId, playerId);
     }
     public async Task UseGetOutOfJailCard(Guid gameId)
     {
         var playerId = GetPlayerId();
-        await _gameService.UseGetOutOfJailCard(gameId, playerId);
+        await _gameManager.UseGetOutOfJailCard(gameId, playerId);
     }
     public async Task PayToGetOutOfJail(Guid gameId)
     {
         var playerId = GetPlayerId();
-        await _gameService.PayToGetOutOfJail(gameId, playerId);
+        await _gameManager.PayToGetOutOfJail(gameId, playerId);
     }
 
     // Property stuff
     public async Task BuyProperty(Guid gameId)
     {
         var playerId = GetPlayerId();
-        await _gameService.BuyProperty(gameId, playerId);
+        await _gameManager.BuyProperty(gameId, playerId);
     }
     public async Task SellProperty(Guid gameId, Guid propertyId)
     {
         var playerId = GetPlayerId();
-        await _gameService.SellProperty(gameId, playerId, propertyId);
+        await _gameManager.SellProperty(gameId, playerId, propertyId);
     }
 
     public async Task UpgradeProperty(Guid gameId, Guid propertyId)
     {
         var playerId = GetPlayerId();
-        await _gameService.UpgradeProperty(gameId, playerId, propertyId);
+        await _gameManager.UpgradeProperty(gameId, playerId, propertyId);
     }
     public async Task DowngradeProperty(Guid gameId, Guid propertyId)
     {
         var playerId = GetPlayerId();
-        await _gameService.DowngradeProperty(gameId, playerId, propertyId);
+        await _gameManager.DowngradeProperty(gameId, playerId, propertyId);
     }
     public async Task MortgageProperty(Guid gameId, Guid propertyId)
     {
         var playerId = GetPlayerId();
-        await _gameService.MortgageProperty(gameId, playerId, propertyId);
+        await _gameManager.MortgageProperty(gameId, playerId, propertyId);
     }
     public async Task UnmortgageProperty(Guid gameId, Guid propertyId)
     {
         var playerId = GetPlayerId();
-        await _gameService.UnmortgageProperty(gameId, playerId, propertyId);
+        await _gameManager.UnmortgageProperty(gameId, playerId, propertyId);
     }
 
     // Trade stuff     
     public async Task InitiateTrade(Guid gameId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         var initiatorId = GetPlayerId();
-        await _gameService.InitiateTrade(gameId, initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        await _gameManager.InitiateTrade(gameId, initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
     }
     public async Task NegotiateTrade(Guid gameId,Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
     {
         var negotiatorId = GetPlayerId();
-        await _gameService.NegotiateTrade(gameId, negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        await _gameManager.NegotiateTrade(gameId, negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
     }
     public async Task AcceptTrade(Guid gameId, Guid tradeId)
     {
         var recipientId = GetPlayerId();
-        await _gameService.AcceptTrade(gameId, recipientId, tradeId);
+        await _gameManager.AcceptTrade(gameId, recipientId, tradeId);
     }
     public async Task RejectTrade(Guid gameId, Guid tradeId)
     {
         var recipientId = GetPlayerId();
-        await _gameService.RejectTrade(gameId, recipientId, tradeId);
+        await _gameManager.RejectTrade(gameId, recipientId, tradeId);
     }
     public async Task CancelTrade(Guid gameId, Guid tradeId)
     {
         var initiatorId = GetPlayerId();
-        await _gameService.CancelTrade(gameId, initiatorId, tradeId);
+        await _gameManager.CancelTrade(gameId, initiatorId, tradeId);
     }
     #endregion
 

@@ -5,14 +5,14 @@ using MonopolyServer.Models;
 
 namespace MonopolyServer.Services;
 
-public class GameService
+public class GameManager
 {
     private static readonly ConcurrentDictionary<Guid, GameState> _activeGames = new();
     private readonly IEventPublisher _eventPublisher;
-    private readonly ILogger<GameService> _logger;
+    private readonly ILogger<GameManager> _logger;
     private readonly ILoggerFactory _loggerFactory;
 
-    public GameService(IEventPublisher eventPublisher, ILogger<GameService> logger, ILoggerFactory loggerFactory)
+    public GameManager(IEventPublisher eventPublisher, ILogger<GameManager> logger, ILoggerFactory loggerFactory)
     {
         _eventPublisher = eventPublisher;
         _logger = logger;
