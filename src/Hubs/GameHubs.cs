@@ -54,7 +54,7 @@ public class GameHubs : Hub<IResponse>
 
     private readonly ILogger<GameHubs> _logger;
 
-    private static ConcurrentDictionary<string, Guid> _connectionDict { get; set; } = new();
+    private static readonly ConcurrentDictionary<string, Guid> _connectionDict = new();
 
     public GameHubs(GameService gameService, ILogger<GameHubs> logger)
     {
