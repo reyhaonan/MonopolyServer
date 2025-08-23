@@ -266,10 +266,10 @@ public class GameState
     private static (int, int) RollPhysicalDice()
     {
         // Gamba, might wanna look for better randomness?
-        // int dice1 = _random.Next(1, 7);
-        // int dice2 = _random.Next(1, 7);
-        int dice1 = 1;
-        int dice2 = 0;
+        int dice1 = _random.Next(1, 7);
+        int dice2 = _random.Next(1, 7);
+        // int dice1 = 1;
+        // int dice2 = 0;
         return (dice1, dice2);
     }
 
@@ -510,7 +510,7 @@ public class GameState
         return NextPlayer();
     }
 
-    public int DeclareBankcruptcy(Guid playerId)
+    public (int currentPlayerIndex, bool isGameOver ) DeclareBankcruptcy(Guid playerId)
     {
         Player bankcruptPlayer = GetPlayerById(playerId) ?? throw new InvalidOperationException("Player not found");
 
@@ -524,9 +524,14 @@ public class GameState
 
         ActivePlayers.Remove(bankcruptPlayer);
 
-        if (isActivePlayer) ChangeGamePhase(GamePhase.PlayerTurnStart);
+        // Game over
+        if (ActivePlayers.Count <= 1)
+        {
+            ChangeGamePhase(GamePhase.GameOver);
+        }
+        else if (isActivePlayer) ChangeGamePhase(GamePhase.PlayerTurnStart);
         CurrentPlayerIndex %= ActivePlayers.Count;
-        return CurrentPlayerIndex;
+        return (CurrentPlayerIndex, ActivePlayers.Count <= 1);
     }
 
     #endregion

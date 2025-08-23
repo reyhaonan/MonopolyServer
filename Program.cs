@@ -119,7 +119,6 @@ app.Use((context, next) => {
 
     var scheme = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.AuthenticationSchemes;
     var typeId = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.TypeId;
-    Console.WriteLine($"Method {scheme} {typeId} {context.User.Identity.IsAuthenticated}");
     //  XSRF-TOKEN Checks if authenticated and auth scheme used is default
     if (scheme != "RefreshTokenScheme" && typeId != null && context.User.Identity.IsAuthenticated)
     {

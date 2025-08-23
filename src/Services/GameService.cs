@@ -135,7 +135,8 @@ public class GameService
     {
         GameState game = GetGame(gameId);
 
-        int nextPlayerIndex = game.DeclareBankcruptcy(playerId);
+        if (game.ActivePlayers.Count <= 1) throw new InvalidOperationException("Cannot declare bankcruptcy when you are the winner");
+        var (nextPlayerIndex, isGameOver) = game.DeclareBankcruptcy(playerId);
 
         await _eventPublisher.PublishGameActionEvent("DeclareBankcruptcy", gameId, new
         {
@@ -143,12 +144,9 @@ public class GameService
             NextPlayerIndex = nextPlayerIndex
         });
 
-        if (game.ActivePlayers.Count == 1)
+        if (isGameOver)
         {
-            await _eventPublisher.PublishGameControlEvent("GameOver", gameId, new
-            {
-                WinningPlayerId = game.ActivePlayers.First().Id
-            });
+            await _eventPublisher.PublishGameControlEvent("GameOver", gameId, new { });
         }
 
     }

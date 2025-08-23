@@ -25,8 +25,8 @@ public class TransactionHistory
     public void AddTransaction(TransactionInfo transaction, TransactionCallback cb)
     {
         if (!_hasActiveTransaction) throw new Exception("No active transaction");
-        _transactionDiff.Add(transaction);
-        History.Add(transaction);
+        _transactionDiff.Insert(0,transaction);
+        History.Insert(0,transaction);
         cb.Invoke(transaction.Amount);
     }
     public List<TransactionInfo> CommitTransaction()

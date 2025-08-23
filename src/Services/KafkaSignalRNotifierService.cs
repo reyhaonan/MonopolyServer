@@ -75,13 +75,11 @@ public class KafkaSignalRNotifierService : BackgroundService
                             }
                             else if (eventType == "GameOver")
                             {
-                                var winningPlayerId = eventData.GetProperty("WinningPlayerId").GetGuid();
-                                await _hubContext.Clients.Group(gameId.ToString()).GameOverResponse(gameId, winningPlayerId);
+                                await _hubContext.Clients.Group(gameId.ToString()).GameOverResponse(gameId);
                             }
                             #endregion
 
                             #region Game Event
-                            // TODO: more event type handling
                             else if (eventType == "DiceRolled")
                             {
                                 var result = eventData.GetProperty("RollResult").Deserialize<RollResult>();

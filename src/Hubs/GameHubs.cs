@@ -13,7 +13,7 @@ public interface IResponse
     Task JoinGameResponse(Guid gameId, List<Player> players);
     Task StartGameResponse(Guid gameId, List<Player> newPlayerOrder);
     Task GameEnded(Guid gameId);
-    Task GameOverResponse(Guid gameId, Guid winningPlayerId);
+    Task GameOverResponse(Guid gameId);
     Task SyncGameResponse(GameState game);
 
     #endregion
