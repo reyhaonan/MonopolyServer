@@ -6,7 +6,7 @@ public class RailroadProperty : Property
     {
     }
 
-    public override int CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
+    public override int CalculateRent(int ownerRailroads = 0)
     {
         if (IsMortgaged) return 0;
 

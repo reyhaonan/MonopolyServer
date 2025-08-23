@@ -15,6 +15,7 @@ public interface IResponse
     Task GameEnded(Guid gameId);
     Task GameOverResponse(Guid gameId);
     Task SyncGameResponse(GameState game);
+    Task UpdateGameConfigResponse(Guid gameId, GameConfig gameConfig);
 
     #endregion
 
@@ -103,6 +104,10 @@ public class GameHubs : Hub<IResponse>
     public async Task StartGame(Guid gameId)
     {
         await _gameService.StartGame(gameId);
+    }
+    public async Task UpdateGameConfig(Guid gameId, GameConfig newGameConfig)
+    {
+        await _gameService.UpdateGameConfig(gameId, newGameConfig);
     }
     #endregion
 

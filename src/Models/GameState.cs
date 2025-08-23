@@ -252,7 +252,6 @@ public class GameState
     /// <exception cref="Exception">Thrown if the game has already started</exception>
     public List<Player> StartGame()
     {
-        
         if (ActivePlayers.Count < GameConfig.MinPlayers) throw new InvalidOperationException("Cannot start a game with only one player");
         CurrentPlayerIndex = 0;
 
@@ -270,6 +269,18 @@ public class GameState
 
         return ActivePlayers;
     }
+
+    public void UpdateGameConfig(GameConfig newGameConfig)
+    {
+        if(CurrentPhase != GamePhase.WaitingForPlayers)throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
+        GameConfig.FreeParkingPot = newGameConfig.FreeParkingPot;
+        GameConfig.DoubleBaseRentOnFullColorSet = newGameConfig.DoubleBaseRentOnFullColorSet;
+        GameConfig.AllowCollectRentOnJail = newGameConfig.AllowCollectRentOnJail;
+        GameConfig.AllowMortgagingProperties = newGameConfig.AllowMortgagingProperties;
+        GameConfig.BalancedHousePurchase = newGameConfig.BalancedHousePurchase;
+        GameConfig.StartingMoney = Math.Clamp(newGameConfig.StartingMoney, 500, 3000);
+    }
+    
     
     #region Dice rolling handling
     /// <summary>
@@ -431,7 +442,7 @@ public class GameState
         if (property is CountryProperty countryProperty)
         {
             var groupIsOwnedByPlayer = Board.GroupIsOwnedByPlayer(countryProperty.Group, owner.Id);
-            rentValue = countryProperty.CalculateRent(diceRoll:totalDiceRoll, doubleBaseRent: groupIsOwnedByPlayer && GameConfig.DoubleBaseRentOnFullColorSet);
+            rentValue = countryProperty.CalculateRent(doubleBaseRent: groupIsOwnedByPlayer && GameConfig.DoubleBaseRentOnFullColorSet);
         }
         else if (property is UtilityProperty utilityProperty)
         {

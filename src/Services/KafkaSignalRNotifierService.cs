@@ -16,7 +16,7 @@ public class KafkaSignalRNotifierService : BackgroundService
         private readonly IConfiguration Configuration;
 
         public KafkaSignalRNotifierService(IHubContext<GameHubs.GameHubs, IResponse> hubContext,
-                                           ILogger<KafkaSignalRNotifierService> logger,GameService gameService, IConfiguration configuration)
+                                           ILogger<KafkaSignalRNotifierService> logger, IConfiguration configuration)
         {
             _hubContext = hubContext;
             _logger = logger;
@@ -72,6 +72,11 @@ public class KafkaSignalRNotifierService : BackgroundService
                             {
                                 var newPlayerOrder = eventData.GetProperty("NewPlayerOrder").Deserialize<List<Player>>() ?? throw new Exception("Invalid player list");
                                 await _hubContext.Clients.Group(gameId.ToString()).StartGameResponse(gameId, newPlayerOrder);
+                            }
+                            else if (eventType == "UpdateGameConfig")
+                            {
+                                var newGameConfig = eventData.GetProperty("NewGameConfig").Deserialize<GameConfig>() ?? throw new Exception("Invalid game config");
+                                await _hubContext.Clients.Group(gameId.ToString()).UpdateGameConfigResponse(gameId, newGameConfig);
                             }
                             else if (eventType == "GameOver")
                             {

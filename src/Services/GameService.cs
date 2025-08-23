@@ -63,6 +63,14 @@ public class GameService
 
         await _eventPublisher.PublishGameControlEvent("GameStart", gameId, new { NewPlayerOrder = newPlayerOrder });
     }
+    public async Task UpdateGameConfig(Guid gameId, GameConfig newGameConfig)
+    {
+        GameState game = GetGame(gameId);
+        
+        game.UpdateGameConfig(newGameConfig);
+
+        await _eventPublisher.PublishGameControlEvent("UpdateGameConfig", gameId, new { NewGameConfig = game.GameConfig });
+    }
 
     
     public async Task ProcessDiceRoll(Guid gameId, Guid playerId)
