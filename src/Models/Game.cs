@@ -310,10 +310,10 @@ public class Game
     private static (int, int) RollPhysicalDice()
     {
         // Corrected to roll a random number between 1 and 6 for each die.
-        int dice1 = 1;
-        int dice2 = 0;
-        // int dice1 = _random.Next(1, 7);
-        // int dice2 = _random.Next(1, 7);
+        // int dice1 = 1;
+        // int dice2 = 0;
+        int dice1 = _random.Next(1, 7);
+        int dice2 = _random.Next(1, 7);
         return (dice1, dice2);
     }
 
