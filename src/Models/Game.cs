@@ -13,6 +13,7 @@ public class Game
 
     #region Private property
     private readonly ILogger _logger;
+    private const int MaxConsecutiveDoubles = 3;
     private static readonly Random _random = new Random();
     private int _diceRoll1 = 0;
     private int _diceRoll2 = 0;
@@ -312,61 +313,85 @@ public class Game
     private static (int, int) RollPhysicalDice()
     {
         // Corrected to roll a random number between 1 and 6 for each die.
-        int dice1 = _random.Next(1, 7);
-        int dice2 = _random.Next(1, 7);
+        int dice1 = 5;
+        int dice2 = 1;
+        // int dice1 = _random.Next(1, 7);
+        // int dice2 = _random.Next(1, 7);
         return (dice1, dice2);
     }
 
-    /// <summary>
-    /// Handles the game logic for doubles, such as getting out of jail or going to jail after three consecutive doubles.
-    /// </summary>
     private void HandleDiceRollConsequences(Player currentPlayer, int dice1, int dice2)
     {
         bool isDoubles = dice1 == dice2;
+        int totalDiceRoll = dice1 + dice2;
 
+        if (currentPlayer.IsInJail)
+        {
+            HandleInJailRoll(currentPlayer, totalDiceRoll, isDoubles);
+        }
+        else
+        {
+            HandleRegularRoll(currentPlayer, totalDiceRoll, isDoubles);
+        }
+    }
+
+    private void HandleInJailRoll(Player player, int totalDiceRoll, bool isDoubles)
+    {
         if (isDoubles)
         {
-            if (currentPlayer.IsInJail)
+            // Player rolled doubles, they get out of jail and move.
+            _logger.LogInformation($"Player {player.Name} rolled doubles and got out of jail!");
+            player.FreeFromJail();
+            player.ResetConsecutiveDouble();
+            _totalDiceRoll = totalDiceRoll;
+        }
+        else
+        {
+            // Did not roll doubles. Reduce remaining time in jail.
+            player.ReduceJailTurnRemaining();
+            if (player.JailTurnsRemaining == 0)
             {
-                // Player rolled doubles, they get out of jail and can move
-                currentPlayer.FreeFromJail();
-                currentPlayer.ResetConsecutiveDouble();
-                _totalDiceRoll = dice1 + dice2;
-                _logger.LogInformation($"Player {currentPlayer.Name} rolled doubles and got out of jail!");
+                // 3rd failed attempt. Player must pay the fine and then moves.
+                _logger.LogInformation($"Player {player.Name} must pay the fine to get out of jail.");
+                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.FreeFromJail, player.Id, null, GameConfig.JailFine, true), (amount) =>
+                {
+                    player.DeductMoney(amount);
+                    player.FreeFromJail();
+                });
+                _totalDiceRoll = totalDiceRoll;
             }
             else
             {
-                // Standard double roll
-                currentPlayer.AddConsecutiveDouble();
-                if (currentPlayer.ConsecutiveDoubles >= 3)
-                {
-                    currentPlayer.GoToJail();
-                    // Go to Jail action ends the turn and prevents movement.
-                    _totalDiceRoll = 0;
-                    _logger.LogInformation($"Player {currentPlayer.Name} rolled three consecutive doubles and is sent to jail!");
-                }
-                else
-                {
-                    _totalDiceRoll = dice1 + dice2;
-                }
+                // 1st or 2nd failed attempt. Turn ends, no movement.
+                _logger.LogInformation($"Player {player.Name} did not roll doubles and remains in jail.");
+                _totalDiceRoll = 0;
             }
         }
-        else // Not a double roll
+    }
+
+    private void HandleRegularRoll(Player player, int totalDiceRoll, bool isDoubles)
+    {
+        if (isDoubles)
         {
-            currentPlayer.ResetConsecutiveDouble();
-            if (currentPlayer.IsInJail)
+            player.AddConsecutiveDouble();
+            if (player.ConsecutiveDoubles >= MaxConsecutiveDoubles)
             {
-                currentPlayer.ReduceJailTurnRemaining();
-                _totalDiceRoll = 0; // Player does not move
-                if (currentPlayer.JailTurnsRemaining == 0)
-                {
-                    currentPlayer.FreeFromJail();
-                }
+                // Rolled 3 consecutive doubles. Go to jail, no movement.
+                _logger.LogInformation($"Player {player.Name} rolled three consecutive doubles and is sent to jail!");
+                player.GoToJail();
+                _totalDiceRoll = 0;
             }
             else
             {
-                _totalDiceRoll = dice1 + dice2;
+                // Standard double roll. Player will move and roll again.
+                _totalDiceRoll = totalDiceRoll;
             }
+        }
+        else
+        {
+            // Not a double roll. Reset the counter and move.
+            player.ResetConsecutiveDouble();
+            _totalDiceRoll = totalDiceRoll;
         }
     }
 
@@ -515,6 +540,7 @@ public class Game
         // Reset total dice roll for the current turn.
         _totalDiceRoll = 0;
         (_diceRoll1, _diceRoll2) = RollPhysicalDice();
+        TransactionsHistory.StartTransaction();
         HandleDiceRollConsequences(currentPlayer, _diceRoll1, _diceRoll2);
 
         // Only move if the player is not going to jail or is not in jail after the roll.
@@ -528,7 +554,6 @@ public class Game
 
         // Handle all actions related to landing on a new space
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
-        TransactionsHistory.StartTransaction();
         HandleLandingActions(currentPlayer, passedStart, _totalDiceRoll);
         var transactionInfo = TransactionsHistory.CommitTransaction();
 
