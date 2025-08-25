@@ -30,12 +30,12 @@ builder.Services.AddScoped<IUserOAuthRepository, UserOAuthRepository>();
 
 builder.Services.AddHostedService<KafkaSignalRNotifierService>();
 
-var AllowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+var AllowedOrigin = builder.Configuration.GetSection("AllowedOrigin").Get<string>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins(AllowedOrigins ?? []).AllowAnyHeader()
+        policy.WithOrigins(AllowedOrigin ?? "http://localhost:5173").AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
@@ -109,6 +109,10 @@ app.UseAuthentication();
 var GAME_HUBS_URL="/gameHubs"; 
 
 app.Use((context, next) => {
+    if (context.Request.Method == HttpMethods.Options)
+    {
+        return next(context);
+    }
     if (context.WebSockets.IsWebSocketRequest)
     {
         return next(context);

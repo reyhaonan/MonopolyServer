@@ -1,21 +1,19 @@
-version: "3.9"
-
 services:
   app:
     build: .
     container_name: monopoly-app
     ports:
-      - "5217:5217"
+      - "8080:8080"
     environment:
       # Database (matches your appsettings.json structure)
-      Database__Host: ${DB_HOST}
+      Database__Host: db
       Database__Port: ${DB_PORT}
       Database__Username: ${DB_USER}
       Database__Password: ${DB_PASS}
       Database__DatabaseName: ${DB_NAME}
 
       # Kafka
-      Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP}
+      Kafka__BootstrapServers: kafka:9092
       Kafka__ConsumerGroupId: ${KAFKA_GROUP}
       Kafka__GameEventsTopic: ${KAFKA_TOPIC_EVENTS}
       Kafka__GameControlTopic: ${KAFKA_TOPIC_CONTROL}
@@ -31,6 +29,7 @@ services:
     depends_on:
       - db
       - kafka
+      - kafka-setup
 
   db:
     image: postgres:16
@@ -47,7 +46,7 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
-    container_name: zookeeper
+    container_name: monopoly-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -56,15 +55,17 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
-    container_name: kafka
+    container_name: monopoly-kafka
     depends_on:
       - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1

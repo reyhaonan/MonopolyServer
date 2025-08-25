@@ -1,22 +1,15 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /App
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
-
-COPY *.sln .
-COPY MonopolyServer/*.csproj ./MonopolyServer/
+# Copy everything
+COPY . ./
+# Restore as distinct layers
 RUN dotnet restore
+# Build and publish a release
+RUN dotnet publish -o out
 
-# Copy everything else and build
-COPY . .
-WORKDIR /src/MonopolyServer
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
-
-# Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-WORKDIR /app
-COPY --from=build /app/publish .
-
-EXPOSE 5217
-ENV ASPNETCORE_URLS=http://+:5217
-
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
+WORKDIR /App
+COPY --from=build /App/out .
 ENTRYPOINT ["dotnet", "MonopolyServer.dll"]
