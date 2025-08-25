@@ -27,7 +27,7 @@ public class KafkaSignalRNotifierService : BackgroundService
             {
                 GroupId = Configuration["Kafka:ConsumerGroupId"], 
                 BootstrapServers = Configuration["Kafka:BootstrapServers"],
-                AutoOffsetReset = AutoOffsetReset.Earliest, 
+                AutoOffsetReset = AutoOffsetReset.Latest, 
                 EnableAutoCommit = Configuration.GetValue<bool>("Kafka:EnableAutoCommit")
             };
             _kafkaConsumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
