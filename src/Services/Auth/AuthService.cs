@@ -31,12 +31,12 @@ public class AuthService
 
     public async Task<DiscordTokenResponse> GetDiscordAccessToken(string code)
     {
-
+        Console.WriteLine($"BBB {_config["OAuth2:Discord:ClientSecret"]}");
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 // ima invalidate this later
-                { "client_id", _config["OAuth2:Discord:ClientId"] },
-                { "client_secret",  _config["OAuth2:Discord:ClientSecret"]  },
+                { "client_id", _config["OAuth2:Discord:ClientId"]??throw new Exception("OAuth2:Discord:ClientId is missing") },
+                { "client_secret",  _config["OAuth2:Discord:ClientSecret"]??throw new Exception("OAuth2:Discord:ClientSecret is missing")  },
                 { "code", code },
                 { "grant_type", "authorization_code" },
                 { "redirect_uri", "http://localhost:5173/oauth2" },

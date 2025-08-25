@@ -88,7 +88,6 @@ public class KafkaSignalRNotifierService : BackgroundService
                             else if (eventType == "DiceRolled")
                             {
                                 var result = eventData.GetProperty("RollResult").Deserialize<RollResult>();
-                                _logger.LogCritical($"TRANSACTION RESULT, {result.Transaction.Count}");
                                 var playerId = eventData.GetProperty("PlayerId").GetGuid();
                                 await _hubContext.Clients.Group(gameId.ToString()).DiceRolledResponse(gameId, playerId, result);
                             }
@@ -162,7 +161,7 @@ public class KafkaSignalRNotifierService : BackgroundService
                             }
                             else if (eventType == "AcceptTrade")
                             {
-                                var trade = eventData.GetProperty("Trade").Deserialize<Trade>();
+                                var trade = eventData.GetProperty("Trade").Deserialize<Trade>() ?? throw new Exception("Trade doesnt exist on AcceptTrade event");
                                 var transactions = eventData.GetProperty("Transactions").Deserialize<List<TransactionInfo>>() ?? [];
                                 await _hubContext.Clients.Group(gameId.ToString()).AcceptTradeResponse(gameId, trade, transactions);
                             }

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MonopolyServer.Migrations
 {
     [DbContext(typeof(MonopolyDbContext))]
-    [Migration("20250809041418_Initial")]
-    partial class Initial
+    [Migration("20250825120253_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace MonopolyServer.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("MonopolyServer.Database.Entity.User", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -33,18 +33,22 @@ namespace MonopolyServer.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("MonopolyServer.Database.Entity.UserOAuth", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entities.UserOAuth", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("OAuthID")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("ProviderName")
                         .IsRequired()
@@ -57,19 +61,22 @@ namespace MonopolyServer.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("ProviderName", "OAuthID")
+                        .IsUnique();
+
                     b.ToTable("UserOAuth");
                 });
 
-            modelBuilder.Entity("MonopolyServer.Database.Entity.UserOAuth", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entities.UserOAuth", b =>
                 {
-                    b.HasOne("MonopolyServer.Database.Entity.User", "User")
+                    b.HasOne("MonopolyServer.Database.Entities.User", "User")
                         .WithMany("OAuth")
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MonopolyServer.Database.Entity.User", b =>
+            modelBuilder.Entity("MonopolyServer.Database.Entities.User", b =>
                 {
                     b.Navigation("OAuth");
                 });

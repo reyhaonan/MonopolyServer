@@ -17,8 +17,14 @@ public class MonopolyDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        Console.WriteLine($"Connecting to {_configuration["Database:Connection"]}");
-        optionsBuilder.UseNpgsql(_configuration["Database:Connection"]);
+        var hostname = _configuration["Database:Host"] ?? throw new Exception("Database:Host is missing from configuration");
+        var port = _configuration["Database:Port"] ?? throw new Exception("Database:Port is missing from configuration");
+        var username = _configuration["Database:Username"] ?? throw new Exception("Database:Username is missing from configuration");
+        var password = _configuration["Database:Password"] ?? throw new Exception("Database:Password is missing from configuration");
+        var databaseName = _configuration["Database:DatabaseName"] ?? throw new Exception("Database:DatabaseName is missing from configuration");
+        string connectionString = $"Host={hostname};Username={username};Password={password};Database={databaseName};Port={port}";
+        
+        optionsBuilder.UseNpgsql(connectionString);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
