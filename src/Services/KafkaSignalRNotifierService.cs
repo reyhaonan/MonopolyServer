@@ -25,8 +25,8 @@ public class KafkaSignalRNotifierService : BackgroundService
 
             var consumerConfig = new ConsumerConfig
             {
-                GroupId = Configuration["Kafka:ConsumerGroupId"], 
-                BootstrapServers = Configuration["Kafka:BootstrapServers"],
+                GroupId = Configuration["Kafka:ConsumerGroupId"] ?? throw new Exception("Kafka:ConsumerGroupId is missing"), 
+                BootstrapServers = Configuration["Kafka:BootstrapServers"] ?? throw new Exception("Kafka:BootstrapServers is missing"),
                 AutoOffsetReset = AutoOffsetReset.Latest, 
                 EnableAutoCommit = Configuration.GetValue<bool>("Kafka:EnableAutoCommit")
             };
