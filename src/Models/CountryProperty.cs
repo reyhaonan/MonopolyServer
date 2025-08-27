@@ -1,28 +1,52 @@
+using System.Text.Json.Serialization;
+using MonopolyServer.Enums;
+
+namespace MonopolyServer.Models;
 public class CountryProperty : Property
 {
-    public ColorGroup Group { get; set; }
-    public decimal[] RentScheme { get; set; } // [Unimproved, 1H, 2H, 3H, 4H, Hotel]
-    public decimal HouseCost { get; set; }
-    public int NumHouses { get; set; } // 0-4
-    public bool HasHotel { get; set; } // True if 1 hotel (replaces 4 houses)
+    [JsonInclude]
+    public ColorGroup Group { get; init; }
+    [JsonInclude]
+    public int[] RentScheme { get; init; } // [Unimproved, 1H, 2H, 3H, 4H, Hotel]
+    [JsonInclude]
+    public int HouseCost { get; init; }
+    [JsonInclude]
+    public int HouseSellValue { get; init; } // 1/2 of HouseCost
+    [JsonInclude]
+    public RentStage CurrentRentStage { get; private set; } // 0-4
 
-    public CountryProperty(string name, int boardPosition, decimal price, ColorGroup group, decimal[] rentScheme, decimal houseCost)
+    public CountryProperty(string name, int boardPosition, int price, ColorGroup group, int[] rentScheme, int houseCost)
         : base(name, boardPosition, price)
     {
         Group = group;
         RentScheme = rentScheme;
         HouseCost = houseCost;
-        NumHouses = 0;
-        HasHotel = false;
+        HouseSellValue = houseCost / 2;
+        CurrentRentStage = RentStage.Unimproved;
     }
 
-    public override decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
+    public override void ResetProperty()
+    {
+        CurrentRentStage = RentStage.Unimproved;
+        base.ResetProperty();
+    }
+
+    public override int CalculateRent(bool doubleBaseRent = false)
     {
         if (IsMortgaged) return 0;
-
-        // Rent scheme is [Unimproved, 1H, 2H, 3H, 4H, Hotel]
-        // Index 0 for unimproved, 1-4 for houses, 5 for hotel
-        if (HasHotel) return RentScheme[5];
-        return RentScheme[NumHouses];
+        if (doubleBaseRent && CurrentRentStage == RentStage.Unimproved) return RentScheme[(int)CurrentRentStage] * 2;
+        return RentScheme[(int)CurrentRentStage];
     }
+
+    public void UpgradeRentStage()
+    {
+        CurrentRentStage++;
+    }
+
+    public void DownGradeRentStage()
+    {
+        CurrentRentStage--;
+
+    }
+
 }

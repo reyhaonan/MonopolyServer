@@ -1,3 +1,4 @@
+namespace MonopolyServer.Models;
 public class RailroadProperty : Property
 {
     public RailroadProperty(string name, int boardPosition)
@@ -5,7 +6,7 @@ public class RailroadProperty : Property
     {
     }
 
-    public override decimal CalculateRent(int diceRoll = 0, int ownerRailroads = 0, int ownerUtilities = 0)
+    public override int CalculateRent(int ownerRailroads = 0)
     {
         if (IsMortgaged) return 0;
 

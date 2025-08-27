@@ -1,4 +1,4 @@
-
+namespace MonopolyServer.Enums;
 public enum GamePhase
 {
     WaitingForPlayers,
@@ -7,6 +7,5 @@ public enum GamePhase
     MovingToken,
     LandingOnSpaceAction,
     PostLandingActions, // Auctions, debt resolution
-    TurnEnd,
     GameOver
 }

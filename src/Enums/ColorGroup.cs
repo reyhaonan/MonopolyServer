@@ -1,3 +1,4 @@
+namespace MonopolyServer.Enums;
 public enum ColorGroup
 {
     Brown,
@@ -8,5 +9,4 @@ public enum ColorGroup
     Yellow,
     Green,
     DarkBlue,
-    None // Railroads, Utilities, or special spaces
 }
