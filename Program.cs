@@ -152,10 +152,12 @@ app.Use((context, next) => {
 });
 
 app.MapHub<GameHubs>(GAME_HUBS_URL);
+
+app.UseAuthorization();
+
 AuthRoute.Map(app);
 GameRoute.Map(app);
 
-app.UseAuthorization();
 app.MapGet("/", context =>
 {
     context.Response.Redirect("/swagger");
