@@ -30,12 +30,12 @@ builder.Services.AddScoped<IUserOAuthRepository, UserOAuthRepository>();
 
 builder.Services.AddHostedService<KafkaSignalRNotifierService>();
 
-var AllowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+var AllowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string>() ?? throw new Exception("AllowedOrigins is not declared");
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins(AllowedOrigins?? ["http://localhost:5173"]).AllowAnyHeader()
+        policy.WithOrigins(AllowedOrigins.Split(", ")).AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });

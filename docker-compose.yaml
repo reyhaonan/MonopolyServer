@@ -26,6 +26,8 @@ services:
       OAuth2__Discord__ClientId: ${DISCORD_CLIENT_ID}
       OAuth2__Discord__ClientSecret: ${DISCORD_CLIENT_SECRET}
 
+      AllowedOrigins: ${ALLOWED_ORIGINS}
+
     depends_on:
       - db
       - kafka
