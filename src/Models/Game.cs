@@ -1154,12 +1154,16 @@ public class Game
     public Trade NegotiateTrade(Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade.");
+
+        // Only recipient can negotiate
         if (trade.RecipientId != negotiatorId) throw new InvalidOperationException("Player is not permitted to perform this action.");
 
-        Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
-        Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
+        // Last initiator become recipient
+        Player recipientPlayer = GetPlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
+        // Last recipient become new initiator
+        Player negotiatorPlayer = GetPlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
 
-        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
+        _validateTrade(negotiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
         trade.Negotiate(propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
         return trade;
