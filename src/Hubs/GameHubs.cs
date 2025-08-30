@@ -190,15 +190,15 @@ public class GameHubs : Hub<IResponse>
     }
 
     // Trade stuff     
-    public async Task InitiateTrade(Guid gameId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
+    public async Task InitiateTrade(Guid gameId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         var initiatorId = GetPlayerId();
-        await _gameManager.InitiateTrade(gameId, initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        await _gameManager.InitiateTrade(gameId, initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
     }
-    public async Task NegotiateTrade(Guid gameId,Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
+    public async Task NegotiateTrade(Guid gameId,Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         var negotiatorId = GetPlayerId();
-        await _gameManager.NegotiateTrade(gameId, negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        await _gameManager.NegotiateTrade(gameId, negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
     }
     public async Task AcceptTrade(Guid gameId, Guid tradeId)
     {

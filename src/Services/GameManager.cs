@@ -281,14 +281,14 @@ public class GameManager
     }
 
     
-    public async Task InitiateTrade(Guid gameId, Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
+    public async Task InitiateTrade(Guid gameId, Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(initiatorId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
         if(initiatorId.Equals(recipientId))throw new InvalidOperationException("Cannot trade with yourself");
 
-        var trade = game.InitiateTrade(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        var trade = game.InitiateTrade(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
         await _eventPublisher.PublishGameActionEvent("InitiateTrade", gameId, new
         {
@@ -342,12 +342,12 @@ public class GameManager
 
     }
 
-    public async Task NegotiateTrade(Guid gameId, Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
+    public async Task NegotiateTrade(Guid gameId, Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(negotiatorId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
-        Trade trade = game.NegotiateTrade(negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        Trade trade = game.NegotiateTrade(negotiatorId, tradeId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
         await _eventPublisher.PublishGameActionEvent("NegotiateTrade", gameId, new
         {

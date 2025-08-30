@@ -5,6 +5,7 @@ using MonopolyServer.Utils;
 namespace MonopolyServer.Models;
 
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 public class Game
@@ -985,8 +986,12 @@ public class Game
     /// <param name="moneyFromInitiator">The money offered by the initiator.</param>
     /// <param name="moneyFromRecipient">The money offered by the recipient.</param>
     /// <exception cref="InvalidOperationException">Thrown if the trade is invalid (e.g., insufficient funds, properties not owned, or properties with houses).</exception>
-    private void _validateTrade(Player initiatorPlayer, Player recipientPlayer, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
+    private void _validateTrade(Player initiatorPlayer, Player recipientPlayer, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
+        // Verify get out of free card
+        if (initiatorPlayer.GetOutOfJailFreeCards < getOutOfJailCardFromInitiator) throw new InvalidOperationException("Initiator doesn't have enough get out of jail card");
+        if (recipientPlayer.GetOutOfJailFreeCards < getOutOfJailCardFromRecipient) throw new InvalidOperationException("Recipient doesn't have enough get out of jail card");
+
         // Verify money
         if (initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator's money is invalid.");
         if (recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient's money is invalid.");
@@ -1026,14 +1031,14 @@ public class Game
     /// <param name="moneyFromRecipient">The amount of money offered by the recipient.</param>
     /// <returns>The newly created Trade object.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the players or trade details are invalid.</exception>
-    public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
+    public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         Player initiatorPlayer = GetPlayerById(initiatorId) ?? throw new InvalidOperationException("Invalid initiator player.");
         Player recipientPlayer = GetPlayerById(recipientId) ?? throw new InvalidOperationException("Invalid recipient player.");
 
-        _validateTrade(initiatorPlayer, recipientPlayer, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        _validateTrade(initiatorPlayer, recipientPlayer, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
-        Trade newTrade = new Trade(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        Trade newTrade = new Trade(initiatorId, recipientId, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
         ActiveTrades.Add(newTrade);
         return newTrade;
     }
@@ -1054,7 +1059,7 @@ public class Game
         Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
         Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
 
-        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient);
+        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient, trade.GetOutOfJailCardFromInitiator, trade.GetOutOfJailCardFromRecipient);
 
         // Perform money transfer
         TransactionsHistory.StartTransaction();
@@ -1090,6 +1095,18 @@ public class Game
         foreach (Property property in propertyOffer)
         {
             property.ChangeOwner(recipientPlayer.Id);
+        }
+        Console.WriteLine("TTrade", JsonSerializer.Serialize<Trade>(trade));
+        // Perform get out of jail card transfer
+        if (trade.GetOutOfJailCardFromInitiator > 0)
+        {
+            initiatorPlayer.AddGetOutOfJailFreeCard(trade.GetOutOfJailCardFromInitiator * -1);
+            recipientPlayer.AddGetOutOfJailFreeCard(trade.GetOutOfJailCardFromInitiator);
+        }
+        if (trade.GetOutOfJailCardFromRecipient > 0)
+        {
+            recipientPlayer.AddGetOutOfJailFreeCard(trade.GetOutOfJailCardFromRecipient * -1);
+            initiatorPlayer.AddGetOutOfJailFreeCard(trade.GetOutOfJailCardFromRecipient);
         }
 
         ActiveTrades.Remove(trade);
@@ -1134,7 +1151,7 @@ public class Game
     /// <param name="moneyFromRecipient">The new amount of money from the recipient.</param>
     /// <returns>The updated Trade object.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the trade or player is invalid.</exception>
-    public Trade NegotiateTrade(Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient)
+    public Trade NegotiateTrade(Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade.");
         if (trade.RecipientId != negotiatorId) throw new InvalidOperationException("Player is not permitted to perform this action.");
@@ -1142,9 +1159,9 @@ public class Game
         Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
         Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
 
-        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient);
+        _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
-        trade.Negotiate(propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient);
+        trade.Negotiate(propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
         return trade;
     }
     #endregion

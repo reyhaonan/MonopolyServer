@@ -36,7 +36,7 @@ public class Player
         CurrentPosition = 0;
         IsInJail = false;
         JailTurnsRemaining = 0;
-        GetOutOfJailFreeCards = 0;
+        GetOutOfJailFreeCards = 2;
         ConsecutiveDoubles = 0;
         PropertiesOwned = new List<Guid>();
         IsBankrupt = false;
@@ -109,9 +109,9 @@ public class Player
         return true;
     }
 
-    public void AddGetOutOfJailFreeCard()
+    public void AddGetOutOfJailFreeCard(int amount)
     {
-        GetOutOfJailFreeCards++;
+        GetOutOfJailFreeCards += amount;
     }
 
     public void AddConsecutiveDouble()
