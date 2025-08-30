@@ -371,7 +371,7 @@ public class Game
     {
         if (isDoubles)
         {
-            player.AddConsecutiveDouble();
+            if(!player.JustFreedFromJail)player.AddConsecutiveDouble();
             if (player.ConsecutiveDoubles >= MaxConsecutiveDoubles)
             {
                 // Rolled 3 consecutive doubles. Go to jail, no movement.
@@ -540,7 +540,7 @@ public class Game
         (_diceRoll1, _diceRoll2) = RollPhysicalDice();
         TransactionsHistory.StartTransaction();
         HandleDiceRollConsequences(currentPlayer, _diceRoll1, _diceRoll2);
-
+        currentPlayer.JustFreedFromJail = false;
         // Only move if the player is not going to jail or is not in jail after the roll.
         bool passedStart = false;
         if (!currentPlayer.IsInJail)
@@ -579,6 +579,7 @@ public class Game
             NewPlayerJailTurnsRemaining = currentPlayer.JailTurnsRemaining,
             ConsecutiveDoubles = currentPlayer.ConsecutiveDoubles
         };
+        
 
         return new RollResult
         {

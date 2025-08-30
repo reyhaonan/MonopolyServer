@@ -27,6 +27,7 @@ public class Player
     public bool IsBankrupt { get; private set; }
     [JsonInclude]
     public string HexColor { get; init; }
+    public bool JustFreedFromJail { get; set; }
 
     public Player(string name, string hexColor, Guid id)
     {
@@ -96,6 +97,7 @@ public class Player
     {
         IsInJail = false;
         JailTurnsRemaining = 0;
+        JustFreedFromJail = true;
     }
 
     public bool UseGetOutOfJailFreeCard()
