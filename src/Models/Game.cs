@@ -993,8 +993,8 @@ public class Game
         if (recipientPlayer.GetOutOfJailFreeCards < getOutOfJailCardFromRecipient) throw new InvalidOperationException("Recipient doesn't have enough get out of jail card");
 
         // Verify money
-        if (initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator's money is invalid.");
-        if (recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient's money is invalid.");
+        if (initiatorPlayer.Money > 0 && initiatorPlayer.Money < moneyFromInitiator) throw new InvalidOperationException("Initiator's money is invalid.");
+        if (recipientPlayer.Money > 0 && recipientPlayer.Money < moneyFromRecipient) throw new InvalidOperationException("Recipient's money is invalid.");
 
         // Verify property ownership
         bool initiatorPropertyIsValid = propertyOffer.All(property => initiatorPlayer.PropertiesOwned.Contains(property));
