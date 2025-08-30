@@ -549,10 +549,10 @@ public class Game
             passedStart = currentPlayer.MoveBy(_totalDiceRoll);
             _logger.LogInformation($"Player moved to position {currentPlayer.CurrentPosition}");
         }
-
-        // Handle all actions related to landing on a new space
+        // Handle all actions related to landing on a new space, ignore if player is in jail
         ChangeGamePhase(GamePhase.LandingOnSpaceAction);
         HandleLandingActions(currentPlayer, passedStart, _totalDiceRoll);
+
         var transactionInfo = TransactionsHistory.CommitTransaction();
 
         // Finalize the dice rolling process and return the result
