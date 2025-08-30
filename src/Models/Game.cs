@@ -542,16 +542,15 @@ public class Game
         HandleDiceRollConsequences(currentPlayer, _diceRoll1, _diceRoll2);
         currentPlayer.JustFreedFromJail = false;
         // Only move if the player is not going to jail or is not in jail after the roll.
-        bool passedStart = false;
         if (!currentPlayer.IsInJail)
         {
             ChangeGamePhase(GamePhase.MovingToken);
-            passedStart = currentPlayer.MoveBy(_totalDiceRoll);
+            bool passedStart = currentPlayer.MoveBy(_totalDiceRoll);
             _logger.LogInformation($"Player moved to position {currentPlayer.CurrentPosition}");
+            // Handle all actions related to landing on a new space, ignore if player is in jail
+            ChangeGamePhase(GamePhase.LandingOnSpaceAction);
+            HandleLandingActions(currentPlayer, passedStart, _totalDiceRoll);
         }
-        // Handle all actions related to landing on a new space, ignore if player is in jail
-        ChangeGamePhase(GamePhase.LandingOnSpaceAction);
-        HandleLandingActions(currentPlayer, passedStart, _totalDiceRoll);
 
         var transactionInfo = TransactionsHistory.CommitTransaction();
 
