@@ -37,7 +37,7 @@ public class Player
         CurrentPosition = 0;
         IsInJail = false;
         JailTurnsRemaining = 0;
-        GetOutOfJailFreeCards = 2;
+        GetOutOfJailFreeCards = 0;
         ConsecutiveDoubles = 0;
         PropertiesOwned = new List<Guid>();
         IsBankrupt = false;
