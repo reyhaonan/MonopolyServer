@@ -311,8 +311,6 @@ public class Game
     private static (int, int) RollPhysicalDice()
     {
         // Corrected to roll a random number between 1 and 6 for each die.
-        // int dice1 = 1;
-        // int dice2 = 1;
         int dice1 = _random.Next(1, 7);
         int dice2 = _random.Next(1, 7);
         return (dice1, dice2);
@@ -535,12 +533,15 @@ public class Game
         ChangeGamePhase(GamePhase.RollingDice);
         var currentPlayer = GetCurrentPlayer();
         if (currentPlayer.Money < 0) throw new InvalidOperationException("Player is in debt");
+
         // Reset total dice roll for the current turn.
         _totalDiceRoll = 0;
         (_diceRoll1, _diceRoll2) = RollPhysicalDice();
+
         TransactionsHistory.StartTransaction();
         HandleDiceRollConsequences(currentPlayer, _diceRoll1, _diceRoll2);
         currentPlayer.JustFreedFromJail = false;
+
         // Only move if the player is not going to jail or is not in jail after the roll.
         if (!currentPlayer.IsInJail)
         {
@@ -1163,7 +1164,7 @@ public class Game
         // Last recipient become new initiator
         Player negotiatorPlayer = GetPlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
 
-        _validateTrade(negotiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
+        _validateTrade(negotiatorPlayer, recipientPlayer, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
         trade.Negotiate(propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
         return trade;
