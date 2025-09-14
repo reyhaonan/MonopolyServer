@@ -21,6 +21,7 @@ public class Game
     private int _totalDiceRoll = 0;
     private int _freeParkingPot = 0;
     private List<ChanceCard> _chanceCards { get; init; }
+    private Dictionary<int, ChanceCard> _chanceCardsDrawn { get; set; } = new Dictionary<int, ChanceCard> ();
     #endregion
 
     #region Public property
@@ -60,7 +61,80 @@ public class Game
         Board = new Board();
         CurrentPhase = GamePhase.WaitingForPlayers;
         TransactionsHistory = new TransactionHistory([]);
-        InitializeDecks();
+        _chanceCards = new List<ChanceCard>{
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToGo,
+                FlavorText = "Advance to Go"
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToProperty,
+                FlavorText = "Advance to Indonesia",
+                PropertyDestination = 1
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToNearestRailroad,
+                FlavorText = "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rent to which they are otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToNearestUtility,
+                FlavorText = "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, pay owner a total 10 times the amount thrown by last dice.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "Bank error in your favor. Collect $200.",
+                MonetaryAmount = 200
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "From sale of stock you get $50.",
+                MonetaryAmount = 50
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "Bank pays you dividend of $50",
+                MonetaryAmount = 50
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.GetOutOfJailFreeCard,
+                FlavorText = "Get out of Jail Free. This card may be kept until needed, or traded/sold.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.GoBackXSpace,
+                FlavorText = "Go Back three spaces.",
+                MoveAdded = -3
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.GoToJail,
+                FlavorText = "Go to Jail.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.PayForEachHouse,
+                FlavorText = "For each house pay $25, For each hotel pay $100.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "Your building and loan matures. Receive Collect $150.",
+                MonetaryAmount = 150
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.PayEachPlayer,
+                FlavorText = "You have been elected Chairman of the Board. Pay each player $50.",
+                MonetaryAmount = 50
+            }
+        };
     }
 
     private const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -145,89 +219,6 @@ public class Game
         return ActivePlayers.Any(p => p.Id == playerId);
     }
     #endregion
-
-    /// <summary>
-    /// Initializes the Chance and Community Chest card decks.
-    /// Currently a placeholder as the implementation is simplified.
-    /// </summary>
-    private void InitializeDecks()
-    {
-        _chanceCards.AddRange(
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.AdvanceToGo,
-                FlavorText = "Advance to Go"
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.AdvanceToProperty,
-                FlavorText = "Advance to Indonesia",
-                PropertyDestination = 1
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.AdvanceToNearestRailroad,
-                FlavorText = "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rent to which they are otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.AdvanceToNearestUtility,
-                FlavorText = "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, pay owner a total 10 times the amount thrown by last dice.",
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.ReceiveX,
-                FlavorText = "Bank error in your favor. Collect $200.",
-                MonetaryAmount = 200
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.ReceiveX,
-                FlavorText = "From sale of stock you get $50.",
-                MonetaryAmount = 50
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.ReceiveX,
-                FlavorText = "Bank pays you dividend of $50",
-                MonetaryAmount = 50
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.GetOutOfJailFreeCard,
-                FlavorText = "Get out of Jail Free. This card may be kept until needed, or traded/sold.",
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.GoBackXSpace,
-                FlavorText = "Go Back three spaces.",
-                MoveAdded = -3
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.GoToJail,
-                FlavorText = "Go to Jail.",
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.PayForEachHouse,
-                FlavorText = "For each house pay $25, For each hotel pay $100.",
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.ReceiveX,
-                FlavorText = "Your building and loan matures. Receive Collect $150.",
-                MonetaryAmount = 150
-            },
-            new ChanceCard
-            {
-                ChanceOutcome = ChanceOutcome.PayEachPlayer,
-                FlavorText = "You have been elected Chairman of the Board. Pay each player $50.",
-                MonetaryAmount = 50
-            }
-        );
-        // Populate with example cards (will need full card logic later)
-    }
 
     /// <summary>
     /// Gets the space at a specific position on the board.
@@ -386,8 +377,10 @@ public class Game
     private static (int, int) RollPhysicalDice()
     {
         // Corrected to roll a random number between 1 and 6 for each die.
-        int dice1 = _random.Next(1, 7);
-        int dice2 = _random.Next(1, 7);
+        // int dice1 = _random.Next(1, 7);
+        // int dice2 = _random.Next(1, 7);
+        int dice1 = 10;
+        int dice2 = 5;
         return (dice1, dice2);
     }
 
@@ -490,7 +483,7 @@ public class Game
         // Handle landing on different types of spaces
         if (space is SpecialSpace specialSpace)
         {
-            ProcessSpecialSpaceLanding(currentPlayer, specialSpace);
+            ProcessSpecialSpaceLanding(currentPlayer, specialSpace, totalDiceRoll);
         }
         else if (space is Property property)
         {
@@ -505,7 +498,7 @@ public class Game
     /// <summary>
     /// Processes actions for landing on a SpecialSpace (e.g., Go To Jail, Tax).
     /// </summary>
-    private void ProcessSpecialSpaceLanding(Player currentPlayer, SpecialSpace specialSpace)
+    private void ProcessSpecialSpaceLanding(Player currentPlayer, SpecialSpace specialSpace, int totalDiceRoll)
     {
         _logger.LogInformation($"{currentPlayer.Name} landed on a special space: {specialSpace.Type}.");
         switch (specialSpace.Type)
@@ -543,39 +536,29 @@ public class Game
                 break;
             case SpecialSpaceType.Chance:
                 var card = _chanceCards[_random.Next(0,_chanceCards.Count())];
+                _logger.LogInformation($"Drawed chance card: {card.FlavorText}");
                 var initialPosition = specialSpace.BoardPosition;
+                _chanceCardsDrawn.Add(initialPosition, card);
                 switch (card.ChanceOutcome)
                 {
                     case ChanceOutcome.AdvanceToGo:
                         const int GO_POSITION = 0;
                         currentPlayer.MoveTo(GO_POSITION);
-                        GivePlayerSalary(currentPlayer);
+                        HandleLandingActions(currentPlayer, true, totalDiceRoll);
                         break;
                     case ChanceOutcome.AdvanceToProperty:
-                        if (initialPosition > card.PropertyDestination)
-                        {
-                            GivePlayerSalary(currentPlayer);
-                        }
                         currentPlayer.MoveTo(card.PropertyDestination);
-                        // TODO: Handle consequences again
+                        HandleLandingActions(currentPlayer, initialPosition > card.PropertyDestination, totalDiceRoll);
                         break;
                     case ChanceOutcome.AdvanceToNearestRailroad:
                         var nearestRailroad = Board.GetNearestRailroad(initialPosition);
-                        if (initialPosition > nearestRailroad.BoardPosition)
-                        {
-                            GivePlayerSalary(currentPlayer);
-                        }
                         currentPlayer.MoveTo(nearestRailroad.BoardPosition);
-                        // TODO: Handle consequences again
+                        HandleLandingActions(currentPlayer, initialPosition > nearestRailroad.BoardPosition, totalDiceRoll);
                         break;
                     case ChanceOutcome.AdvanceToNearestUtility:
                         var nearestUtility = Board.GetNearestUtility(initialPosition);
-                        if (initialPosition > nearestUtility.BoardPosition)
-                        {
-                            GivePlayerSalary(currentPlayer);
-                        }
                         currentPlayer.MoveTo(nearestUtility.BoardPosition);
-                        // TODO: Handle consequences again
+                        HandleLandingActions(currentPlayer, initialPosition > nearestUtility.BoardPosition, totalDiceRoll);
                         break;
                     case ChanceOutcome.ReceiveX:
                         TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, card.MonetaryAmount, true),
@@ -589,7 +572,7 @@ public class Game
                         break;
                     case ChanceOutcome.GoBackXSpace:
                         currentPlayer.MoveBy(card.MoveAdded);
-                        // TODO: Handle consequences again
+                        HandleLandingActions(currentPlayer, false, totalDiceRoll);
                         break;
                     case ChanceOutcome.GoToJail:
                         currentPlayer.GoToJail();
@@ -617,6 +600,8 @@ public class Game
                         }
 
                         break;
+                    default:
+                        throw new InvalidOperationException("Invalid chance card received");
                         
                     
 
@@ -695,6 +680,8 @@ public class Game
         var currentPlayer = GetCurrentPlayer();
         if (currentPlayer.Money < 0) throw new InvalidOperationException("Player is in debt");
 
+        _chanceCardsDrawn.Clear();
+
         // Reset total dice roll for the current turn.
         _totalDiceRoll = 0;
         (_diceRoll1, _diceRoll2) = RollPhysicalDice();
@@ -747,7 +734,8 @@ public class Game
             Dice = diceInfo,
             PlayerState = playerStateInfo,
             Transaction = transactionInfo,
-            NewGamePhase = CurrentPhase
+            NewGamePhase = CurrentPhase,
+            ChanceCardsDrawn = _chanceCardsDrawn
         };
     }
 
