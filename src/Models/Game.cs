@@ -47,12 +47,6 @@ public class Game
 
     #endregion
 
-    /// <summary>
-    /// Constructor for Game. Initializes a new game with a unique ID,
-    /// creates a new board, sets the initial game phase to WaitingForPlayers,
-    /// and initializes the card decks.
-    /// </summary>
-    /// <param name="logger">The logger instance provided by dependency injection.</param>
     public Game(ILogger<Game> logger)
     {
         GameConfig = new GameConfig();
@@ -137,27 +131,6 @@ public class Game
         };
     }
 
-    private const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    /// <summary>
-    /// Generates a random room code of a specified length.
-    /// </summary>
-    /// <param name="length">The desired length of the code.</param>
-    /// <returns>A random string.</returns>
-    public static string Generate(int length = 6)
-    {
-        var stringBuilder = new StringBuilder(length);
-        for (int i = 0; i < length; i++)
-        {
-            stringBuilder.Append(Chars[_random.Next(Chars.Length)]);
-        }
-        return stringBuilder.ToString();
-    }
-
-    /// <summary>
-    /// Changes the current game phase to a new phase.
-    /// </summary>
-    /// <param name="newGamePhase">The new game phase to transition to</param>
     private void ChangeGamePhase(GamePhase newGamePhase)
     {
         _logger.LogInformation($"======Changing Game Phase to: {newGamePhase}======");
@@ -165,14 +138,6 @@ public class Game
     }
 
     #region Player Management
-    /// <summary>
-    /// Adds a new player to the game.
-    /// </summary>
-    /// <param name="playerName">The name of the new player.</param>
-    /// <param name="hexColor">The hexadecimal color string for the player's token.</param>
-    /// <param name="newPlayerId">The unique ID for the new player.</param>
-    /// <returns>The newly created Player object.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the room is full.</exception>
     public Player AddPlayer(string playerName, string hexColor, Guid newPlayerId)
     {
         if (ActivePlayers.Count >= GameConfig.MaxPlayers)
@@ -185,11 +150,6 @@ public class Game
         return newPlayer;
     }
 
-    /// <summary>
-    /// Gets the current player whose turn it is.
-    /// </summary>
-    /// <returns>The current player object.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if there is no active player or the index is invalid.</exception>
     public Player GetCurrentPlayer()
     {
         if (CurrentPlayerIndex < 0 || CurrentPlayerIndex >= ActivePlayers.Count)
@@ -199,32 +159,17 @@ public class Game
         return ActivePlayers[CurrentPlayerIndex];
     }
 
-    /// <summary>
-    /// Gets a player by their unique ID.
-    /// </summary>
-    /// <param name="playerId">The unique ID of the player to find.</param>
-    /// <returns>The player with the specified ID, or null if not found.</returns>
     public Player? GetPlayerById(Guid playerId)
     {
         return ActivePlayers.FirstOrDefault(p => p.Id == playerId);
     }
 
-    /// <summary>
-    /// Checks if a player with the given ID is currently in the game.
-    /// </summary>
-    /// <param name="playerId">The unique ID of the player to check.</param>
-    /// <returns>True if the player is in the game, false otherwise.</returns>
     public bool PlayerIsInGame(Guid playerId)
     {
         return ActivePlayers.Any(p => p.Id == playerId);
     }
     #endregion
 
-    /// <summary>
-    /// Gets the space at a specific position on the board.
-    /// </summary>
-    /// <param name="position">The position on the board (0-39).</param>
-    /// <returns>The space at the specified position, or null if the position is invalid.</returns>
     public Space? GetSpaceAtPosition(int position)
     {
         if (position < 0 || position >= Board.Spaces.Count)
@@ -235,11 +180,6 @@ public class Game
     }
 
     #region Turn Management
-    /// <summary>
-    /// Advances to the next player in turn order.
-    /// Cycles back to the first player after the last player.
-    /// </summary>
-    /// <returns>The index of the next player.</returns>
     private int NextPlayer()
     {
         _logger.LogInformation($"Invoked next player {CurrentPlayerIndex}, Count: {ActivePlayers.Count}");
@@ -252,11 +192,6 @@ public class Game
     #endregion
 
     #region Jail Handling
-    /// <summary>
-    /// Allows a player to pay $50 to get out of jail immediately.
-    /// </summary>
-    /// <returns>A list of transaction information for the jail payment.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the current phase is not PlayerTurnStart or the player is not in jail or doesn't have enough money.</exception>
     public List<TransactionInfo> PayToGetOutOfJail()
     {
         if (CurrentPhase != GamePhase.PlayerTurnStart)
@@ -286,10 +221,6 @@ public class Game
         return TransactionsHistory.CommitTransaction();
     }
 
-    /// <summary>
-    /// Allows a player to use a "Get Out of Jail Free" card if they have one.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if the player is not in jail or doesn't have a Get Out of Jail Free card.</exception>
     public void UseGetOutOfJailCard()
     {
         if (CurrentPhase != GamePhase.PlayerTurnStart)
@@ -316,12 +247,6 @@ public class Game
     #endregion
 
     #region Game flow
-    /// <summary>
-    /// Starts the game by randomizing player order, setting the first player,
-    /// and changing the game phase from WaitingForPlayers to PlayerTurnStart.
-    /// </summary>
-    /// <returns>The list of active players in their randomized order.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the game has already started or not enough players are present.</exception>
     public List<Player> StartGame()
     {
         if (ActivePlayers.Count < GameConfig.MinPlayers)
@@ -347,11 +272,6 @@ public class Game
         return ActivePlayers;
     }
 
-    /// <summary>
-    /// Updates the game configuration settings.
-    /// </summary>
-    /// <param name="newGameConfig">The new GameConfig object with updated settings.</param>
-    /// <exception cref="InvalidOperationException">Thrown if the game is not in the WaitingForPlayers phase.</exception>
     public void UpdateGameConfig(GameConfig newGameConfig)
     {
         if (CurrentPhase != GamePhase.WaitingForPlayers)
@@ -370,10 +290,6 @@ public class Game
     }
 
     #region Dice rolling handling
-    /// <summary>
-    /// Simulates the physical rolling of two dice.
-    /// </summary>
-    /// <returns>A tuple containing the result of each dice roll.</returns>
     private static (int, int) RollPhysicalDice()
     {
         // Corrected to roll a random number between 1 and 6 for each die.
@@ -465,9 +381,6 @@ public class Game
             );
     }
 
-    /// <summary>
-    /// Manages all events that occur when a player lands on a space.
-    /// </summary>
     private void HandleLandingActions(Player currentPlayer, bool passedStart, int totalDiceRoll, bool doubleRailroadRent = false, bool tenTimesUtilityRent = false)
     {
         // Collect Salary if player passed Go
@@ -493,9 +406,6 @@ public class Game
         }
     }
 
-    /// <summary>
-    /// Processes actions for landing on a SpecialSpace (e.g., Go To Jail, Tax).
-    /// </summary>
     private void ProcessSpecialSpaceLanding(Player currentPlayer, SpecialSpace specialSpace, int totalDiceRoll)
     {
         _logger.LogInformation($"{currentPlayer.Name} landed on a special space: {specialSpace.Type}.");
@@ -612,9 +522,6 @@ public class Game
         }
     }
 
-    /// <summary>
-    /// Processes actions for landing on a Property, primarily handling rent payment.
-    /// </summary>
     private void ProcessPropertyLanding(Player currentPlayer, Property property, int totalDiceRoll, bool doubleRailroadRent = false, bool tenTimesUtilityRent = false)
     {
         // No action if landed on your own property or an unowned one.
@@ -664,11 +571,6 @@ public class Game
         }
     }
 
-    /// <summary>
-    /// Rolls the dice for the current player's turn, handles movement and special cases.
-    /// </summary>
-    /// <returns>A RollResult object containing the dice and player state information.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if not in the PlayerTurnStart phase.</exception>
     public RollResult RollDice()
     {
         if (CurrentPhase != GamePhase.PlayerTurnStart)
@@ -741,11 +643,6 @@ public class Game
 
     #endregion
 
-    /// <summary>
-    /// Ends the current player's turn and advances to the next player.
-    /// </summary>
-    /// <returns>The index of the next player.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if not in the PostLandingActions phase or if the player has negative money.</exception>
     public int EndTurn()
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions))
@@ -770,12 +667,6 @@ public class Game
         return NextPlayer();
     }
 
-    /// <summary>
-    /// Handles a player declaring bankruptcy, removing them from the game.
-    /// </summary>
-    /// <param name="playerId">The ID of the player declaring bankruptcy.</param>
-    /// <returns>A tuple containing the new current player index and a boolean indicating if the game is over.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the player is not found.</exception>
     public (int currentPlayerIndex, bool isGameOver) DeclareBankcruptcy(Guid playerId)
     {
         Player bankruptPlayer = GetPlayerById(playerId) ?? throw new InvalidOperationException("Player not found.");
@@ -807,11 +698,6 @@ public class Game
     #endregion
 
     #region Property Management
-    /// <summary>
-    /// Allows the current player to buy the property they have landed on.
-    /// </summary>
-    /// <returns>A tuple containing the ID of the purchased property and the transaction details.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the game phase is inappropriate, the property is already owned, the player has insufficient funds, or the space is not a purchasable property.</exception>
     public (Guid, List<TransactionInfo>) BuyProperty()
     {
         Player currentPlayer = GetCurrentPlayer();
@@ -851,13 +737,6 @@ public class Game
             throw new InvalidOperationException("This space is not a property that can be purchased.");
         }
     }
-
-    /// <summary>
-    /// Sells a property back to the bank for half its original purchase price.
-    /// </summary>
-    /// <param name="propertyId">The ID of the property to sell.</param>
-    /// <returns>A list of transaction information.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the game phase is inappropriate, the property is not owned by the player, or it has houses on it.</exception>
     public List<TransactionInfo> SellProperty(Guid propertyId)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart))
@@ -905,12 +784,6 @@ public class Game
         return TransactionsHistory.CommitTransaction();
     }
 
-    /// <summary>
-    /// Mortgages a property, giving the player its mortgage value.
-    /// </summary>
-    /// <param name="propertyId">The ID of the property to mortgage.</param>
-    /// <returns>A list of transaction information.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the game phase is inappropriate, mortgaging is not allowed, or the property cannot be mortgaged.</exception>
     public List<TransactionInfo> MortgageProperty(Guid propertyId)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart))
@@ -956,13 +829,6 @@ public class Game
 
         return TransactionsHistory.CommitTransaction();
     }
-
-    /// <summary>
-    /// Unmortgages a property by paying the unmortgage cost.
-    /// </summary>
-    /// <param name="propertyId">The ID of the property to unmortgage.</param>
-    /// <returns>A list of transaction information.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the game phase is inappropriate, unmortgaging is not allowed, the property is not owned, or the player has insufficient funds.</exception>
     public List<TransactionInfo> UnmortgageProperty(Guid propertyId)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart))
@@ -1002,12 +868,6 @@ public class Game
         return TransactionsHistory.CommitTransaction();
     }
 
-    /// <summary>
-    /// Generic checking for countryProperty upgrade or downgrade.
-    /// </summary>
-    /// <param name="countryProperty">The property to check.</param>
-    /// <param name="currentPlayer">The player attempting the action.</param>
-    /// <exception cref="InvalidOperationException">Thrown if the property is mortgaged, not owned by the player, or the player doesn't own the full color group.</exception>
     private void _checkUpgradeDowngradePermission(CountryProperty countryProperty, Player currentPlayer)
     {
         if (countryProperty.IsMortgaged)
@@ -1030,13 +890,6 @@ public class Game
             throw new InvalidOperationException("Cannot upgrade/downgrade because there is a mortgaged property in the group.");
         }
     }
-
-    /// <summary>
-    /// Upgrades a country property by building a house or hotel.
-    /// </summary>
-    /// <param name="propertyId">The ID of the property to upgrade.</param>
-    /// <returns>A list of transactions for the upgrade.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the game phase is inappropriate or the property cannot be upgraded.</exception>
     public List<TransactionInfo> UpgradeProperty(Guid propertyId)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart))
@@ -1079,13 +932,6 @@ public class Game
             throw new InvalidOperationException("This space is not a country property that can be upgraded.");
         }
     }
-
-    /// <summary>
-    /// Downgrades a country property, selling a house or hotel back to the bank for money.
-    /// </summary>
-    /// <param name="propertyId">The ID of the property to downgrade.</param>
-    /// <returns>A list of transactions for the downgrade.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the game phase is inappropriate or the property cannot be downgraded.</exception>
     public List<TransactionInfo> DowngradeProperty(Guid propertyId)
     {
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && !CurrentPhase.Equals(GamePhase.PlayerTurnStart))
@@ -1126,16 +972,6 @@ public class Game
     #endregion
 
     #region Trade
-    /// <summary>
-    /// Validates a trade proposal to ensure all properties and money are valid.
-    /// </summary>
-    /// <param name="initiatorPlayer">The player initiating the trade.</param>
-    /// <param name="recipientPlayer">The player receiving the trade offer.</param>
-    /// <param name="propertyOffer">The properties offered by the initiator.</param>
-    /// <param name="propertyCounterOffer">The properties offered by the recipient.</param>
-    /// <param name="moneyFromInitiator">The money offered by the initiator.</param>
-    /// <param name="moneyFromRecipient">The money offered by the recipient.</param>
-    /// <exception cref="InvalidOperationException">Thrown if the trade is invalid (e.g., insufficient funds, properties not owned, or properties with houses).</exception>
     private void _validateTrade(Player initiatorPlayer, Player recipientPlayer, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         // Verify get out of free card
@@ -1170,17 +1006,6 @@ public class Game
         }
     }
 
-    /// <summary>
-    /// Initiates a new trade proposal between two players.
-    /// </summary>
-    /// <param name="initiatorId">The ID of the player initiating the trade.</param>
-    /// <param name="recipientId">The ID of the player the trade is offered to.</param>
-    /// <param name="propertyOffer">A list of properties offered by the initiator.</param>
-    /// <param name="propertyCounterOffer">A list of properties offered by the recipient.</param>
-    /// <param name="moneyFromInitiator">The amount of money offered by the initiator.</param>
-    /// <param name="moneyFromRecipient">The amount of money offered by the recipient.</param>
-    /// <returns>The newly created Trade object.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the players or trade details are invalid.</exception>
     public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         Player initiatorPlayer = GetPlayerById(initiatorId) ?? throw new InvalidOperationException("Invalid initiator player.");
@@ -1193,13 +1018,6 @@ public class Game
         return newTrade;
     }
 
-    /// <summary>
-    /// Accepts a trade proposal and executes the property and money transfers.
-    /// </summary>
-    /// <param name="tradeId">The ID of the trade to accept.</param>
-    /// <param name="recipientId">The ID of the player accepting the trade.</param>
-    /// <returns>A tuple containing the transaction details and the accepted trade object.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the trade or players are invalid, or the player is not authorized to accept.</exception>
     public (List<TransactionInfo>, Trade) AcceptTrade(Guid tradeId, Guid recipientId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade.");
@@ -1264,12 +1082,6 @@ public class Game
         return (TransactionsHistory.CommitTransaction(), trade);
     }
 
-    /// <summary>
-    /// Rejects a trade proposal.
-    /// </summary>
-    /// <param name="tradeId">The ID of the trade to reject.</param>
-    /// <param name="recipientId">The ID of the player rejecting the trade.</param>
-    /// <exception cref="InvalidOperationException">Thrown if the trade or player is invalid.</exception>
     public void RejectTrade(Guid tradeId, Guid recipientId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade.");
@@ -1277,30 +1089,12 @@ public class Game
         ActiveTrades.Remove(trade);
     }
 
-    /// <summary>
-    /// Cancels a trade initiated by the current player.
-    /// </summary>
-    /// <param name="tradeId">The ID of the trade to cancel.</param>
-    /// <param name="initiatorId">The ID of the player cancelling the trade.</param>
-    /// <exception cref="InvalidOperationException">Thrown if the trade or player is invalid.</exception>
     public void CancelTrade(Guid tradeId, Guid initiatorId)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade.");
         if (trade.InitiatorId != initiatorId) throw new InvalidOperationException("Player is not permitted to perform this action.");
         ActiveTrades.Remove(trade);
     }
-
-    /// <summary>
-    /// Negotiates a new trade proposal based on an existing one.
-    /// </summary>
-    /// <param name="negotiatorId">The ID of the player negotiating.</param>
-    /// <param name="tradeId">The ID of the trade being negotiated.</param>
-    /// <param name="propertyOffer">The new list of properties from the initiator.</param>
-    /// <param name="propertyCounterOffer">The new list of properties from the recipient.</param>
-    /// <param name="moneyFromInitiator">The new amount of money from the initiator.</param>
-    /// <param name="moneyFromRecipient">The new amount of money from the recipient.</param>
-    /// <returns>The updated Trade object.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the trade or player is invalid.</exception>
     public Trade NegotiateTrade(Guid negotiatorId, Guid tradeId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
         Trade trade = ActiveTrades.First(tr => tr.Id == tradeId) ?? throw new InvalidOperationException("Invalid trade.");
