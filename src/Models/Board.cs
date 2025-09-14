@@ -107,5 +107,52 @@ public class Board
         var maxProperty = properties.MinBy(p => p.CurrentRentStage) ?? throw new Exception("No min?? like how");
         return maxProperty.CurrentRentStage;
     }
+    public RailroadProperty GetNearestRailroad(int boardPosition)
+    {
+        var railroads = Spaces.OfType<RailroadProperty>().ToList();
+
+        var nearestRailroad = railroads.FirstOrDefault(pos => pos.BoardPosition > boardPosition);
+
+        if (nearestRailroad == null)
+        {
+            return railroads.First();
+        }
+
+        return nearestRailroad;
+    }
+    public UtilityProperty GetNearestUtility(int boardPosition)
+    {
+        var utilities = Spaces.OfType<UtilityProperty>().ToList();
+
+        var nearestUtility = utilities.FirstOrDefault(pos => pos.BoardPosition > boardPosition);
+
+        if (nearestUtility == null)
+        {
+            return utilities.First();
+        }
+
+        return nearestUtility;
+    }
+    public int GetHouseCountOwnedByPlayer(Player player)
+    {
+        var allPropertyWithHouse = Spaces.OfType<CountryProperty>()
+            .Where(countryProperty =>
+                countryProperty.OwnerId == player.Id &&
+                countryProperty.CurrentRentStage > RentStage.Unimproved &&
+                countryProperty.CurrentRentStage <= RentStage.FourHouse
+                ).ToList();
+
+        return allPropertyWithHouse.Aggregate(0, (currentSum, nextProperty) => currentSum + (int)nextProperty.CurrentRentStage);
+    }
+    public int GetHotelCountOwnedByPlayer(Player player)
+    {
+        var allPropertyWithHotel = Spaces.OfType<CountryProperty>()
+            .Where(countryProperty =>
+                countryProperty.OwnerId == player.Id &&
+                countryProperty.CurrentRentStage == RentStage.Hotel
+                ).ToList();
+
+        return allPropertyWithHotel.Count();
+    }
 }
 

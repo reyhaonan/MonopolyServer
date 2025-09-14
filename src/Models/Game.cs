@@ -20,6 +20,7 @@ public class Game
     private int _diceRoll2 = 0;
     private int _totalDiceRoll = 0;
     private int _freeParkingPot = 0;
+    private List<ChanceCard> _chanceCards { get; init; }
     #endregion
 
     #region Public property
@@ -37,12 +38,12 @@ public class Game
     [JsonInclude]
     public List<Trade> ActiveTrades { get; private set; } = [];
 
-    // Card decks are simplified for now, could be objects
     [JsonInclude]
     public GamePhase CurrentPhase { get; private set; }
 
     [JsonInclude]
     public TransactionHistory TransactionsHistory { get; init; }
+
     #endregion
 
     /// <summary>
@@ -151,6 +152,80 @@ public class Game
     /// </summary>
     private void InitializeDecks()
     {
+        _chanceCards.AddRange(
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToGo,
+                FlavorText = "Advance to Go"
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToProperty,
+                FlavorText = "Advance to Indonesia",
+                PropertyDestination = 1
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToNearestRailroad,
+                FlavorText = "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rent to which they are otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToNearestUtility,
+                FlavorText = "Advance token to the nearest Utility. If unowned, you may buy it from the Bank. If owned, pay owner a total 10 times the amount thrown by last dice.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "Bank error in your favor. Collect $200.",
+                MonetaryAmount = 200
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "From sale of stock you get $50.",
+                MonetaryAmount = 50
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "Bank pays you dividend of $50",
+                MonetaryAmount = 50
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.GetOutOfJailFreeCard,
+                FlavorText = "Get out of Jail Free. This card may be kept until needed, or traded/sold.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.GoBackXSpace,
+                FlavorText = "Go Back three spaces.",
+                MoveAdded = -3
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.GoToJail,
+                FlavorText = "Go to Jail.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.PayForEachHouse,
+                FlavorText = "For each house pay $25, For each hotel pay $100.",
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.ReceiveX,
+                FlavorText = "Your building and loan matures. Receive Collect $150.",
+                MonetaryAmount = 150
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.PayEachPlayer,
+                FlavorText = "You have been elected Chairman of the Board. Pay each player $50.",
+                MonetaryAmount = 50
+            }
+        );
         // Populate with example cards (will need full card logic later)
     }
 
@@ -391,6 +466,14 @@ public class Game
         }
     }
 
+    private void GivePlayerSalary(Player player)
+    {
+        TransactionsHistory.AddTransaction(
+                new TransactionInfo(TransactionType.Salary, null, player.Id, SALARY_AMOUNT, true),
+                (amount) => player.AddMoney(amount)
+            );
+    }
+
     /// <summary>
     /// Manages all events that occur when a player lands on a space.
     /// </summary>
@@ -399,10 +482,7 @@ public class Game
         // Collect Salary if player passed Go
         if (passedStart)
         {
-            TransactionsHistory.AddTransaction(
-                new TransactionInfo(TransactionType.Salary, null, currentPlayer.Id, SALARY_AMOUNT, true),
-                (amount) => currentPlayer.AddMoney(amount)
-            );
+            GivePlayerSalary(currentPlayer);
         }
 
         var space = GetSpaceAtPosition(currentPlayer.CurrentPosition) ?? throw new InvalidOperationException("Invalid space.");
@@ -459,6 +539,87 @@ public class Game
                             currentPlayer.AddMoney(amount);
                             _freeParkingPot = 0;
                         });
+                }
+                break;
+            case SpecialSpaceType.Chance:
+                var card = _chanceCards[_random.Next(0,_chanceCards.Count())];
+                var initialPosition = specialSpace.BoardPosition;
+                switch (card.ChanceOutcome)
+                {
+                    case ChanceOutcome.AdvanceToGo:
+                        const int GO_POSITION = 0;
+                        currentPlayer.MoveTo(GO_POSITION);
+                        GivePlayerSalary(currentPlayer);
+                        break;
+                    case ChanceOutcome.AdvanceToProperty:
+                        if (initialPosition > card.PropertyDestination)
+                        {
+                            GivePlayerSalary(currentPlayer);
+                        }
+                        currentPlayer.MoveTo(card.PropertyDestination);
+                        // TODO: Handle consequences again
+                        break;
+                    case ChanceOutcome.AdvanceToNearestRailroad:
+                        var nearestRailroad = Board.GetNearestRailroad(initialPosition);
+                        if (initialPosition > nearestRailroad.BoardPosition)
+                        {
+                            GivePlayerSalary(currentPlayer);
+                        }
+                        currentPlayer.MoveTo(nearestRailroad.BoardPosition);
+                        // TODO: Handle consequences again
+                        break;
+                    case ChanceOutcome.AdvanceToNearestUtility:
+                        var nearestUtility = Board.GetNearestUtility(initialPosition);
+                        if (initialPosition > nearestUtility.BoardPosition)
+                        {
+                            GivePlayerSalary(currentPlayer);
+                        }
+                        currentPlayer.MoveTo(nearestUtility.BoardPosition);
+                        // TODO: Handle consequences again
+                        break;
+                    case ChanceOutcome.ReceiveX:
+                        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, card.MonetaryAmount, true),
+                        (amount) =>
+                        {
+                            currentPlayer.AddMoney(amount);
+                        });
+                        break;
+                    case ChanceOutcome.GetOutOfJailFreeCard:
+                        currentPlayer.AddGetOutOfJailFreeCard(1);
+                        break;
+                    case ChanceOutcome.GoBackXSpace:
+                        currentPlayer.MoveBy(card.MoveAdded);
+                        // TODO: Handle consequences again
+                        break;
+                    case ChanceOutcome.GoToJail:
+                        currentPlayer.GoToJail();
+                        break;
+                    case ChanceOutcome.PayForEachHouse:
+                        var houseCount = Board.GetHouseCountOwnedByPlayer(currentPlayer);
+                        var hotelCount = Board.GetHotelCountOwnedByPlayer(currentPlayer);
+
+                        const int HOUSE_FINE = 25;
+                        const int HOTEL_FINE = 100;
+
+                        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, HOUSE_FINE * houseCount + HOTEL_FINE * hotelCount, true), amount =>
+                        {
+                            currentPlayer.DeductMoney(amount);
+                        });
+                        break;
+                    case ChanceOutcome.PayEachPlayer:
+                        foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
+                        {
+                            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, otherPlayer.Id, card.MonetaryAmount, false), amount =>
+                            {
+                                otherPlayer.AddMoney(amount);
+                                currentPlayer.DeductMoney(amount);
+                            });
+                        }
+
+                        break;
+                        
+                    
+
                 }
                 break;
             // Other cases (Chance, CommunityChest, etc.) would go here
