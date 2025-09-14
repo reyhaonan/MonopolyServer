@@ -76,7 +76,7 @@ public class Game
             new ChanceCard
             {
                 ChanceOutcome = ChanceOutcome.AdvanceToNearestRailroad,
-                FlavorText = "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rent to which they are otherwise entitled. If Railroad is unowned, you may buy it from the Bank.",
+                FlavorText = "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rent to which they are otherwise entitled.",
             },
             new ChanceCard
             {
@@ -377,10 +377,8 @@ public class Game
     private static (int, int) RollPhysicalDice()
     {
         // Corrected to roll a random number between 1 and 6 for each die.
-        // int dice1 = _random.Next(1, 7);
-        // int dice2 = _random.Next(1, 7);
-        int dice1 = 10;
-        int dice2 = 5;
+        int dice1 = _random.Next(1, 7);
+        int dice2 = _random.Next(1, 7);
         return (dice1, dice2);
     }
 
@@ -470,7 +468,7 @@ public class Game
     /// <summary>
     /// Manages all events that occur when a player lands on a space.
     /// </summary>
-    private void HandleLandingActions(Player currentPlayer, bool passedStart, int totalDiceRoll)
+    private void HandleLandingActions(Player currentPlayer, bool passedStart, int totalDiceRoll, bool doubleRailroadRent = false, bool tenTimesUtilityRent = false)
     {
         // Collect Salary if player passed Go
         if (passedStart)
@@ -487,7 +485,7 @@ public class Game
         }
         else if (space is Property property)
         {
-            ProcessPropertyLanding(currentPlayer, property, totalDiceRoll);
+            ProcessPropertyLanding(currentPlayer, property, totalDiceRoll, doubleRailroadRent, tenTimesUtilityRent);
         }
         else
         {
@@ -553,12 +551,12 @@ public class Game
                     case ChanceOutcome.AdvanceToNearestRailroad:
                         var nearestRailroad = Board.GetNearestRailroad(initialPosition);
                         currentPlayer.MoveTo(nearestRailroad.BoardPosition);
-                        HandleLandingActions(currentPlayer, initialPosition > nearestRailroad.BoardPosition, totalDiceRoll);
+                        HandleLandingActions(currentPlayer, initialPosition > nearestRailroad.BoardPosition, totalDiceRoll, doubleRailroadRent:true);
                         break;
                     case ChanceOutcome.AdvanceToNearestUtility:
                         var nearestUtility = Board.GetNearestUtility(initialPosition);
                         currentPlayer.MoveTo(nearestUtility.BoardPosition);
-                        HandleLandingActions(currentPlayer, initialPosition > nearestUtility.BoardPosition, totalDiceRoll);
+                        HandleLandingActions(currentPlayer, initialPosition > nearestUtility.BoardPosition, totalDiceRoll, tenTimesUtilityRent: true);
                         break;
                     case ChanceOutcome.ReceiveX:
                         TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, card.MonetaryAmount, true),
@@ -617,7 +615,7 @@ public class Game
     /// <summary>
     /// Processes actions for landing on a Property, primarily handling rent payment.
     /// </summary>
-    private void ProcessPropertyLanding(Player currentPlayer, Property property, int totalDiceRoll)
+    private void ProcessPropertyLanding(Player currentPlayer, Property property, int totalDiceRoll, bool doubleRailroadRent = false, bool tenTimesUtilityRent = false)
     {
         // No action if landed on your own property or an unowned one.
         if (!property.IsOwnedByOtherPlayer(currentPlayer.Id))
@@ -645,12 +643,14 @@ public class Game
         else if (property is UtilityProperty utilityProperty)
         {
             var utilityCount = Board.GetUtilityOwnedByPlayer(ownerId).Count;
-            rentValue = utilityProperty.CalculateRent(diceRoll: totalDiceRoll, ownerUtilities: utilityCount);
+            // Force the rentCalc to 10 if param override
+            rentValue = utilityProperty.CalculateRent(diceRoll: totalDiceRoll, ownerUtilities: tenTimesUtilityRent?2:utilityCount);
         }
         else if (property is RailroadProperty railroadProperty)
         {
             var railroadCount = Board.GetRailroadOwnedByPlayer(ownerId).Count;
             rentValue = railroadProperty.CalculateRent(ownerRailroads: railroadCount);
+            rentValue = doubleRailroadRent ? rentValue * 2 : rentValue;
         }
 
         if (rentValue > 0)
