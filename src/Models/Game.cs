@@ -212,11 +212,21 @@ public class Game
         }
 
         TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.FreeFromJail, currentPlayer.Id, null, GameConfig.JailFine, true), (amount) =>
-        {
-            currentPlayer.DeductMoney(amount);
-            currentPlayer.FreeFromJail();
-        });
+        TransactionsHistory.AddTransaction(
+            new TransactionInfo
+            {
+                TransactionType = TransactionType.FreeFromJail,
+                SenderId = currentPlayer.Id,
+                ReceiverId = null,
+                Amount = GameConfig.JailFine,
+                IsTransactionWithBank = true
+            },
+            (amount) =>
+            {
+                currentPlayer.DeductMoney(amount);
+                currentPlayer.FreeFromJail();
+            }
+        );
 
         return TransactionsHistory.CommitTransaction();
     }
@@ -331,11 +341,20 @@ public class Game
             {
                 // 3rd failed attempt. Player must pay the fine and then moves.
                 _logger.LogInformation($"Player {player.Name} must pay the fine to get out of jail.");
-                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.FreeFromJail, player.Id, null, GameConfig.JailFine, true), (amount) =>
-                {
-                    player.DeductMoney(amount);
-                    player.FreeFromJail();
-                });
+                TransactionsHistory.AddTransaction(
+                    new TransactionInfo
+                    {
+                        TransactionType = TransactionType.FreeFromJail,
+                        SenderId = player.Id,
+                        ReceiverId = null,
+                        Amount = GameConfig.JailFine,
+                        IsTransactionWithBank = true
+                    }, (amount) =>
+                    {
+                        player.DeductMoney(amount);
+                        player.FreeFromJail();
+                    }
+                );
                 _totalDiceRoll = totalDiceRoll;
             }
             else
@@ -376,7 +395,13 @@ public class Game
     private void GivePlayerSalary(Player player)
     {
         TransactionsHistory.AddTransaction(
-                new TransactionInfo(TransactionType.Salary, null, player.Id, SALARY_AMOUNT, true),
+                new TransactionInfo{
+                    TransactionType = TransactionType.Salary,
+                    SenderId = null,
+                    ReceiverId = player.Id,
+                    Amount = SALARY_AMOUNT,
+                    IsTransactionWithBank = true
+                },
                 (amount) => player.AddMoney(amount)
             );
     }
@@ -415,7 +440,14 @@ public class Game
                 currentPlayer.GoToJail();
                 break;
             case SpecialSpaceType.IncomeTax:
-                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, GameConfig.IncomeTax, true),
+                TransactionsHistory.AddTransaction(
+                    new TransactionInfo{
+                        TransactionType = TransactionType.Fine, 
+                        SenderId = currentPlayer.Id,
+                        ReceiverId = null,
+                        Amount = GameConfig.IncomeTax, 
+                        IsTransactionWithBank = true
+                    },
                     (amount) =>
                     {
                         _freeParkingPot += amount;
@@ -423,7 +455,14 @@ public class Game
                     });
                 break;
             case SpecialSpaceType.LuxuryTax:
-                TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, GameConfig.LuxuryTax, true),
+                TransactionsHistory.AddTransaction(
+                    new TransactionInfo{
+                        TransactionType = TransactionType.Fine, 
+                        SenderId = currentPlayer.Id, 
+                        ReceiverId = null,
+                        Amount = GameConfig.LuxuryTax, 
+                        IsTransactionWithBank = true
+                    },
                     (amount) =>
                     {
                         _freeParkingPot += amount;
@@ -434,7 +473,14 @@ public class Game
                 // Check if the game config allows collecting from the Free Parking pot.
                 if (GameConfig.FreeParkingPot)
                 {
-                    TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, _freeParkingPot, true),
+                    TransactionsHistory.AddTransaction(
+                        new TransactionInfo{
+                            TransactionType = TransactionType.Reward, 
+                            SenderId = null, 
+                            ReceiverId = currentPlayer.Id,
+                            Amount = _freeParkingPot, 
+                            IsTransactionWithBank = true
+                        },
                         (amount) =>
                         {
                             currentPlayer.AddMoney(amount);
@@ -469,11 +515,19 @@ public class Game
                         HandleLandingActions(currentPlayer, initialPosition > nearestUtility.BoardPosition, totalDiceRoll, tenTimesUtilityRent: true);
                         break;
                     case ChanceOutcome.ReceiveX:
-                        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Reward, null, currentPlayer.Id, card.MonetaryAmount, true),
-                        (amount) =>
-                        {
-                            currentPlayer.AddMoney(amount);
-                        });
+                        TransactionsHistory.AddTransaction(
+                            new TransactionInfo{
+                                TransactionType = TransactionType.Reward, 
+                                SenderId = null, 
+                                ReceiverId = currentPlayer.Id, 
+                                Amount = card.MonetaryAmount, 
+                                IsTransactionWithBank = true
+                            },
+                            (amount) =>
+                            {
+                                currentPlayer.AddMoney(amount);
+                            }
+                        );
                         break;
                     case ChanceOutcome.GetOutOfJailFreeCard:
                         currentPlayer.AddGetOutOfJailFreeCard(1);
@@ -492,19 +546,37 @@ public class Game
                         const int HOUSE_FINE = 25;
                         const int HOTEL_FINE = 100;
 
-                        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, null, HOUSE_FINE * houseCount + HOTEL_FINE * hotelCount, true), amount =>
-                        {
-                            currentPlayer.DeductMoney(amount);
-                        });
+                        TransactionsHistory.AddTransaction(
+                            new TransactionInfo{
+                                TransactionType = TransactionType.Fine,
+                                SenderId = currentPlayer.Id,
+                                ReceiverId = null,
+                                Amount = HOUSE_FINE * houseCount + HOTEL_FINE * hotelCount,
+                                IsTransactionWithBank = true
+                            },
+                            amount =>
+                            {
+                                currentPlayer.DeductMoney(amount);
+                            }
+                        );
                         break;
                     case ChanceOutcome.PayEachPlayer:
                         foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
                         {
-                            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Fine, currentPlayer.Id, otherPlayer.Id, card.MonetaryAmount, false), amount =>
-                            {
-                                otherPlayer.AddMoney(amount);
-                                currentPlayer.DeductMoney(amount);
-                            });
+                            TransactionsHistory.AddTransaction(
+                                new TransactionInfo {
+                                    TransactionType = TransactionType.Fine,
+                                    SenderId = currentPlayer.Id,
+                                    ReceiverId = otherPlayer.Id,
+                                    Amount = card.MonetaryAmount,
+                                    IsTransactionWithBank = false
+                                },
+                                amount =>
+                                {
+                                    otherPlayer.AddMoney(amount);
+                                    currentPlayer.DeductMoney(amount);
+                                }
+                            );
                         }
 
                         break;
@@ -563,11 +635,20 @@ public class Game
         if (rentValue > 0)
         {
             _logger.LogInformation($"Deducting {rentValue} from {currentPlayer.Name} for rent to {owner.Name}.");
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Rent, currentPlayer.Id, ownerId, rentValue, false), (amount) =>
-            {
-                currentPlayer.DeductMoney(amount);
-                owner.AddMoney(amount);
-            });
+            TransactionsHistory.AddTransaction(
+                new TransactionInfo{
+                    TransactionType = TransactionType.Rent,
+                    SenderId = currentPlayer.Id,
+                    ReceiverId = ownerId,
+                    Amount = rentValue,
+                    IsTransactionWithBank = false
+                },
+                (amount) =>
+                {
+                    currentPlayer.DeductMoney(amount);
+                    owner.AddMoney(amount);
+                }
+            );
         }
     }
 
@@ -722,12 +803,21 @@ public class Game
             }
 
             TransactionsHistory.StartTransaction();
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Buy, currentPlayer.Id, null, property.PurchasePrice, true), (amount) =>
-            {
-                currentPlayer.DeductMoney(amount);
-                property.BuyProperty(currentPlayer.Id);
-                currentPlayer.PropertiesOwned.Add(property.Id);
-            });
+            TransactionsHistory.AddTransaction(
+                new TransactionInfo{
+                    TransactionType = TransactionType.Buy,
+                    SenderId = currentPlayer.Id,
+                    ReceiverId = null,
+                    Amount = property.PurchasePrice,
+                    IsTransactionWithBank = true
+                },
+                (amount) =>
+                {
+                    currentPlayer.DeductMoney(amount);
+                    property.BuyProperty(currentPlayer.Id);
+                    currentPlayer.PropertiesOwned.Add(property.Id);
+                }
+            );
             var transactionResult = TransactionsHistory.CommitTransaction();
 
             return (property.Id, transactionResult);
@@ -774,12 +864,22 @@ public class Game
         int sellValue = property.IsMortgaged ? 0 : property.MortgageValue;
 
         TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Sell, null, currentPlayer.Id, sellValue, true), (amount) =>
-        {
-            property.SellProperty();
-            currentPlayer.PropertiesOwned.Remove(property.Id);
-            currentPlayer.AddMoney(amount);
-        });
+        TransactionsHistory.AddTransaction(
+            new TransactionInfo
+            {
+                TransactionType = TransactionType.Sell,
+                SenderId = null,
+                ReceiverId = currentPlayer.Id,
+                Amount = sellValue,
+                IsTransactionWithBank = true
+            },
+            (amount) =>
+            {
+                property.SellProperty();
+                currentPlayer.PropertiesOwned.Remove(property.Id);
+                currentPlayer.AddMoney(amount);
+            }
+        );
 
         return TransactionsHistory.CommitTransaction();
     }
@@ -821,11 +921,20 @@ public class Game
         }
 
         TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Mortgage, null, currentPlayer.Id, property.MortgageValue, true), (amount) =>
-        {
-            property.MortgageProperty();
-            currentPlayer.AddMoney(amount);
-        });
+        TransactionsHistory.AddTransaction(
+            new TransactionInfo{
+                TransactionType = TransactionType.Mortgage,
+                SenderId = null,
+                ReceiverId = currentPlayer.Id,
+                Amount = property.MortgageValue,
+                IsTransactionWithBank = true
+            },
+            (amount) =>
+            {
+                property.MortgageProperty();
+                currentPlayer.AddMoney(amount);
+            }
+        );
 
         return TransactionsHistory.CommitTransaction();
     }
@@ -860,11 +969,20 @@ public class Game
         }
 
         TransactionsHistory.StartTransaction();
-        TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Unmortgage, currentPlayer.Id, null, property.UnmortgageCost, true), (amount) =>
-        {
-            property.UnmortgageProperty();
-            currentPlayer.DeductMoney(amount);
-        });
+        TransactionsHistory.AddTransaction(
+            new TransactionInfo{
+                TransactionType = TransactionType.Unmortgage,
+                SenderId = currentPlayer.Id,
+                ReceiverId = null,
+                Amount = property.UnmortgageCost,
+                IsTransactionWithBank = true
+            },
+            (amount) =>
+            {
+                property.UnmortgageProperty();
+                currentPlayer.DeductMoney(amount);
+            }
+        );
         return TransactionsHistory.CommitTransaction();
     }
 
@@ -920,11 +1038,20 @@ public class Game
             }
 
             TransactionsHistory.StartTransaction();
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Upgrade, currentPlayer.Id, null, countryProperty.HouseCost, true), (amount) =>
-            {
-                countryProperty.UpgradeRentStage();
-                currentPlayer.DeductMoney(amount);
-            });
+            TransactionsHistory.AddTransaction(
+                new TransactionInfo{
+                    TransactionType = TransactionType.Upgrade,
+                    SenderId = currentPlayer.Id,
+                    ReceiverId = null,
+                    Amount = countryProperty.HouseCost,
+                    IsTransactionWithBank = true
+                },
+                (amount) =>
+                {
+                    countryProperty.UpgradeRentStage();
+                    currentPlayer.DeductMoney(amount);
+                }
+            );
             return TransactionsHistory.CommitTransaction();
         }
         else
@@ -957,11 +1084,20 @@ public class Game
             }
 
             TransactionsHistory.StartTransaction();
-            TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Downgrade, null, currentPlayer.Id, countryProperty.HouseSellValue, true), (amount) =>
-            {
-                countryProperty.DownGradeRentStage();
-                currentPlayer.AddMoney(amount);
-            });
+            TransactionsHistory.AddTransaction(
+                new TransactionInfo{
+                    TransactionType = TransactionType.Downgrade,
+                    SenderId = null,
+                    ReceiverId = currentPlayer.Id,
+                    Amount = countryProperty.HouseSellValue,
+                    IsTransactionWithBank = true
+                },
+                (amount) =>
+                {
+                    countryProperty.DownGradeRentStage();
+                    currentPlayer.AddMoney(amount);
+                }
+            );
             return TransactionsHistory.CommitTransaction();
         }
         else
@@ -1031,21 +1167,39 @@ public class Game
 
         // Perform money transfer
         TransactionsHistory.StartTransaction();
-        if (trade.MoneyFromInitiator > 0) TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Trade, initiatorPlayer.Id, recipientPlayer.Id, trade.MoneyFromInitiator, false),
-            amount =>
-            {
-                recipientPlayer.AddMoney(amount);
-                initiatorPlayer.DeductMoney(amount);
-            }
-        );
-        if (trade.MoneyFromRecipient > 0) TransactionsHistory.AddTransaction(new TransactionInfo(TransactionType.Trade, recipientPlayer.Id, initiatorPlayer.Id, trade.MoneyFromRecipient, false),
-            amount =>
-            {
-                initiatorPlayer.AddMoney(amount);
-                recipientPlayer.DeductMoney(amount);
-            }
-        );
-
+        if (trade.MoneyFromInitiator > 0)
+        {
+            TransactionsHistory.AddTransaction(
+                new TransactionInfo {
+                    TransactionType = TransactionType.Trade,
+                    SenderId = initiatorPlayer.Id,
+                    ReceiverId = recipientPlayer.Id,
+                    Amount = trade.MoneyFromInitiator,
+                    IsTransactionWithBank = false
+                },
+                amount =>
+                {
+                    recipientPlayer.AddMoney(amount);
+                    initiatorPlayer.DeductMoney(amount);
+                }
+            );
+        }
+        if (trade.MoneyFromRecipient > 0) {
+            TransactionsHistory.AddTransaction(
+                new TransactionInfo {
+                    TransactionType = TransactionType.Trade,
+                    SenderId = recipientPlayer.Id,
+                    ReceiverId = initiatorPlayer.Id,
+                    Amount = trade.MoneyFromRecipient,
+                    IsTransactionWithBank = false
+                },
+                amount =>
+                {
+                    initiatorPlayer.AddMoney(amount);
+                    recipientPlayer.DeductMoney(amount);
+                }
+            );
+        }
         // Perform property transfer
         initiatorPlayer.PropertiesOwned.RemoveAll(pr => trade.PropertyOffer.Contains(pr));
         initiatorPlayer.PropertiesOwned.AddRange(trade.PropertyCounterOffer);
