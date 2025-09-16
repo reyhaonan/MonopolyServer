@@ -2,7 +2,7 @@ namespace MonopolyServer.Enums;
 public enum SpecialSpaceType
 {
     Go,
-    CommunityChest,
+    Treasure,
     Chance,
     IncomeTax,
     LuxuryTax,

@@ -1,10 +1,10 @@
 public enum TreasureOutcome
 {
     AdvanceToGo,
-    CollectX,
     PayXFee,
-    RewardX,
-    Birthday,
+    ReceiveX,
     GetOutOfJailFreeCard,
     PayForEachHouse,
+    GoToJail,
+    CollectXFromEveryPlayer
 }

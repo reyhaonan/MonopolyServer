@@ -20,8 +20,10 @@ public class Game
     private int _diceRoll2 = 0;
     private int _totalDiceRoll = 0;
     private int _freeParkingPot = 0;
-    private List<ChanceCard> _chanceCards { get; init; }
+    private List<ChanceCard> _chanceCards { get; init; } = new List<ChanceCard>();
     private Dictionary<int, ChanceCard> _chanceCardsDrawn { get; set; } = new Dictionary<int, ChanceCard> ();
+    private List<TreasureCard> _treasureCards { get; init; } = new List<TreasureCard>();
+    private Dictionary<int, TreasureCard> _treasureCardsDrawn { get; set; } = new Dictionary<int, TreasureCard> ();
     #endregion
 
     #region Public property
@@ -55,7 +57,96 @@ public class Game
         Board = new Board();
         CurrentPhase = GamePhase.WaitingForPlayers;
         TransactionsHistory = new TransactionHistory([]);
-        _chanceCards = new List<ChanceCard>{
+        InitiateDeck();
+    }
+
+    private void InitiateDeck()
+    {
+        _treasureCards.AddRange(
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.AdvanceToGo,
+                FlavorText = "Advance to Go."
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.ReceiveX,
+                FlavorText = "Bank error in your favor. Collect $200.",
+                MonetaryAmount = 200
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.ReceiveX,
+                FlavorText = "From sale of stock you get $50.",
+                MonetaryAmount = 50
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.GetOutOfJailFreeCard,
+                FlavorText = "Get out of Jail Free. This card may be kept until needed, or traded/sold.",
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.GoToJail,
+                FlavorText = "Go to Jail. Go directly to jail. Do not pass Go, Do not collect $200.",
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.CollectXFromEveryPlayer,
+                FlavorText = "Grand Opera Night. Collect $50 from every player for opening night seats.",
+                MonetaryAmount = 50
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.ReceiveX,
+                FlavorText = "Holiday Fund matures. Receive $100.",
+                MonetaryAmount = 100
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.ReceiveX,
+                FlavorText = "Income tax refund. Collect $20.",
+                MonetaryAmount = 20
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.CollectXFromEveryPlayer,
+                FlavorText = "It's your birthday. Collect $10 from every player.",
+                MonetaryAmount = 10
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.ReceiveX,
+                FlavorText = "Life insurance matures - Collect $100",
+                MonetaryAmount = 100
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.PayXFee,
+                FlavorText = "Hospital Fees. Pay $50.",
+                MonetaryAmount = 50
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.PayXFee,
+                FlavorText = "School fees. Pay $50.",
+                MonetaryAmount = 50
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.PayXFee,
+                FlavorText = "Receive $25 consultancy fee.",
+                MonetaryAmount = 25
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.PayForEachHouse,
+                FlavorText = "You are assessed for street repairs: Pay $40 per house and $115 per hotel you own."
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.ReceiveX,
+                FlavorText = "You have won second prize in a beauty contest. Collect $10.",
+                MonetaryAmount = 10
+            },
+            new TreasureCard {
+                TreasureOutcome = TreasureOutcome.ReceiveX,
+                FlavorText = "You inherit $100.",
+                MonetaryAmount = 100
+            }
+        );
+
+        var properties = Board.Spaces.OfType<Property>();
+        var cheapestProperty = properties.First();
+        var mostExpensiveProperty = properties.Last();
+        var midRangeProperty = properties.Skip(properties.Count() / 2).Last();
+        var railroad = Board.Spaces.OfType<RailroadProperty>().First();
+        _chanceCards.AddRange(
             new ChanceCard
             {
                 ChanceOutcome = ChanceOutcome.AdvanceToGo,
@@ -64,8 +155,26 @@ public class Game
             new ChanceCard
             {
                 ChanceOutcome = ChanceOutcome.AdvanceToProperty,
-                FlavorText = "Advance to Indonesia",
-                PropertyDestination = 1
+                FlavorText = $"Advance to {cheapestProperty.Name}. If you pass Go, collect $200. ",
+                PropertyDestination = cheapestProperty.BoardPosition
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToProperty,
+                FlavorText = $"Advance to {midRangeProperty.Name}. If you pass Go, collect $200. ",
+                PropertyDestination = midRangeProperty.BoardPosition
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToProperty,
+                FlavorText = $"Advance to {mostExpensiveProperty.Name}. If you pass Go, collect $200. ",
+                PropertyDestination = mostExpensiveProperty.BoardPosition
+            },
+            new ChanceCard
+            {
+                ChanceOutcome = ChanceOutcome.AdvanceToProperty,
+                FlavorText = $"Advance to {railroad.Name}. If you pass Go, collect $200. ",
+                PropertyDestination = railroad.BoardPosition
             },
             new ChanceCard
             {
@@ -109,12 +218,12 @@ public class Game
             new ChanceCard
             {
                 ChanceOutcome = ChanceOutcome.GoToJail,
-                FlavorText = "Go to Jail.",
+                FlavorText = "Go to Jail. Go directly to jail. Do not pass Go, Do not collect $200.",
             },
             new ChanceCard
             {
                 ChanceOutcome = ChanceOutcome.PayForEachHouse,
-                FlavorText = "For each house pay $25, For each hotel pay $100.",
+                FlavorText = "Make general repairs on all your property: For each house pay $25, For each hotel pay $100.",
             },
             new ChanceCard
             {
@@ -128,7 +237,8 @@ public class Game
                 FlavorText = "You have been elected Chairman of the Board. Pay each player $50.",
                 MonetaryAmount = 50
             }
-        };
+        );
+    
     }
 
     private void ChangeGamePhase(GamePhase newGamePhase)
@@ -488,12 +598,104 @@ public class Game
                         });
                 }
                 break;
+            case SpecialSpaceType.Treasure:
+                var treasureCardDrawn = _treasureCards[_random.Next(0,_treasureCards.Count())];
+                _logger.LogInformation($"Drawed treasure card: {treasureCardDrawn.FlavorText}");
+                switch (treasureCardDrawn.TreasureOutcome)
+                {
+                    case TreasureOutcome.AdvanceToGo:
+                        const int GO_POSITION = 0;
+                        currentPlayer.MoveTo(GO_POSITION);
+                        HandleLandingActions(currentPlayer, true, totalDiceRoll);
+                        break;
+                    case TreasureOutcome.PayXFee:
+                        TransactionsHistory.AddTransaction(
+                            new TransactionInfo
+                            {
+                                TransactionType = TransactionType.Fine,
+                                SenderId = currentPlayer.Id,
+                                ReceiverId = null,
+                                Amount = treasureCardDrawn.MonetaryAmount,
+                                IsTransactionWithBank = true
+                            },
+                            (amount) =>
+                            {
+                                currentPlayer.DeductMoney(amount);
+                            }
+                        );
+                        break;
+                    case TreasureOutcome.ReceiveX:
+                        TransactionsHistory.AddTransaction(
+                            new TransactionInfo
+                            {
+                                TransactionType = TransactionType.Reward,
+                                SenderId = null,
+                                ReceiverId = currentPlayer.Id,
+                                Amount = treasureCardDrawn.MonetaryAmount,
+                                IsTransactionWithBank = true
+                            },
+                            (amount) =>
+                            {
+                                currentPlayer.AddMoney(amount);
+                            }
+                        );
+                        break;
+                    case TreasureOutcome.GetOutOfJailFreeCard:
+                        currentPlayer.AddGetOutOfJailFreeCard(1);
+                        break;
+                    case TreasureOutcome.PayForEachHouse:
+                        var houseCount = Board.GetHouseCountOwnedByPlayer(currentPlayer);
+                        var hotelCount = Board.GetHotelCountOwnedByPlayer(currentPlayer);
+
+                        const int HOUSE_FINE = 40;
+                        const int HOTEL_FINE = 115;
+
+                        TransactionsHistory.AddTransaction(
+                            new TransactionInfo
+                            {
+                                TransactionType = TransactionType.Fine,
+                                SenderId = currentPlayer.Id,
+                                ReceiverId = null,
+                                Amount = HOUSE_FINE * houseCount + HOTEL_FINE * hotelCount,
+                                IsTransactionWithBank = true
+                            },
+                            amount =>
+                            {
+                                currentPlayer.DeductMoney(amount);
+                            }
+                        );
+                        break;
+                    case TreasureOutcome.GoToJail:
+                        currentPlayer.GoToJail();
+                        break;
+                    case TreasureOutcome.CollectXFromEveryPlayer:
+                        foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
+                        {
+                            TransactionsHistory.AddTransaction(
+                                new TransactionInfo {
+                                    TransactionType = TransactionType.Fine,
+                                    SenderId = otherPlayer.Id,
+                                    ReceiverId = currentPlayer.Id,
+                                    Amount = treasureCardDrawn.MonetaryAmount,
+                                    IsTransactionWithBank = false
+                                },
+                                amount =>
+                                {
+                                    otherPlayer.DeductMoney(amount);
+                                    currentPlayer.AddMoney(amount);
+                                }
+                            );
+                        }
+
+                        break;
+                }
+                break;
             case SpecialSpaceType.Chance:
-                var card = _chanceCards[_random.Next(0,_chanceCards.Count())];
-                _logger.LogInformation($"Drawed chance card: {card.FlavorText}");
+                var chanceCardDrawn = _chanceCards[_random.Next(0,_chanceCards.Count())];
+                _logger.LogInformation($"Drawed chance card: {chanceCardDrawn.FlavorText}");
                 var initialPosition = specialSpace.BoardPosition;
-                _chanceCardsDrawn.Add(initialPosition, card);
-                switch (card.ChanceOutcome)
+                _chanceCardsDrawn.Add(initialPosition, chanceCardDrawn);
+                switch (chanceCardDrawn.ChanceOutcome)
                 {
                     case ChanceOutcome.AdvanceToGo:
                         const int GO_POSITION = 0;
@@ -501,8 +703,8 @@ public class Game
                         HandleLandingActions(currentPlayer, true, totalDiceRoll);
                         break;
                     case ChanceOutcome.AdvanceToProperty:
-                        currentPlayer.MoveTo(card.PropertyDestination);
-                        HandleLandingActions(currentPlayer, initialPosition > card.PropertyDestination, totalDiceRoll);
+                        currentPlayer.MoveTo(chanceCardDrawn.PropertyDestination);
+                        HandleLandingActions(currentPlayer, initialPosition > chanceCardDrawn.PropertyDestination, totalDiceRoll);
                         break;
                     case ChanceOutcome.AdvanceToNearestRailroad:
                         var nearestRailroad = Board.GetNearestRailroad(initialPosition);
@@ -520,7 +722,7 @@ public class Game
                                 TransactionType = TransactionType.Reward, 
                                 SenderId = null, 
                                 ReceiverId = currentPlayer.Id, 
-                                Amount = card.MonetaryAmount, 
+                                Amount = chanceCardDrawn.MonetaryAmount, 
                                 IsTransactionWithBank = true
                             },
                             (amount) =>
@@ -533,7 +735,7 @@ public class Game
                         currentPlayer.AddGetOutOfJailFreeCard(1);
                         break;
                     case ChanceOutcome.GoBackXSpace:
-                        currentPlayer.MoveBy(card.MoveAdded);
+                        currentPlayer.MoveBy(chanceCardDrawn.MoveAdded);
                         HandleLandingActions(currentPlayer, false, totalDiceRoll);
                         break;
                     case ChanceOutcome.GoToJail:
@@ -568,7 +770,7 @@ public class Game
                                     TransactionType = TransactionType.Fine,
                                     SenderId = currentPlayer.Id,
                                     ReceiverId = otherPlayer.Id,
-                                    Amount = card.MonetaryAmount,
+                                    Amount = chanceCardDrawn.MonetaryAmount,
                                     IsTransactionWithBank = false
                                 },
                                 amount =>
@@ -664,6 +866,7 @@ public class Game
         if (currentPlayer.Money < 0) throw new InvalidOperationException("Player is in debt");
 
         _chanceCardsDrawn.Clear();
+        _treasureCardsDrawn.Clear();
 
         // Reset total dice roll for the current turn.
         _totalDiceRoll = 0;
@@ -718,7 +921,8 @@ public class Game
             PlayerState = playerStateInfo,
             Transaction = transactionInfo,
             NewGamePhase = CurrentPhase,
-            ChanceCardsDrawn = _chanceCardsDrawn
+            ChanceCardsDrawn = _chanceCardsDrawn,
+            TreasureCardsDrawn = _treasureCardsDrawn
         };
     }
 

@@ -36,6 +36,7 @@ public readonly struct RollResult
     [JsonInclude]
     // Position, card
     public Dictionary<int, ChanceCard> ChanceCardsDrawn { get; init; }
+    public Dictionary<int, TreasureCard> TreasureCardsDrawn { get; init; }
     // [JsonInclude]
     // public List<Trea> NewTreasureResult { get; init; }
 
