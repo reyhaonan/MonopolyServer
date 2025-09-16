@@ -15,7 +15,7 @@ public class Board
     {
         Spaces.Add(new SpecialSpace("GO!", 0, SpecialSpaceType.Go));
         Spaces.Add(new CountryProperty("Indonesia", 1, 60, ColorGroup.Brown, [2, 10, 30, 90, 160, 250], 50));
-        Spaces.Add(new SpecialSpace("Community Chest", 2, SpecialSpaceType.Treasure));
+        Spaces.Add(new SpecialSpace("Treasure", 2, SpecialSpaceType.Treasure));
         Spaces.Add(new CountryProperty("Malaysia", 3, 60, ColorGroup.Brown, [4, 20, 60, 180, 320, 450], 50));
         Spaces.Add(new SpecialSpace("Income Tax", 4, SpecialSpaceType.IncomeTax));
         Spaces.Add(new RailroadProperty("Shibuya Station", 5));
@@ -30,7 +30,7 @@ public class Board
         Spaces.Add(new CountryProperty("Ireland", 14, 160, ColorGroup.Pink, [12, 60, 180, 500, 700, 900], 100));
         Spaces.Add(new RailroadProperty("Changi Airport", 15));
         Spaces.Add(new CountryProperty("Poland", 16, 180, ColorGroup.Orange, [14, 70, 200, 550, 750, 950], 100));
-        Spaces.Add(new SpecialSpace("Community Chest", 17, SpecialSpaceType.Treasure));
+        Spaces.Add(new SpecialSpace("Treasure", 17, SpecialSpaceType.Treasure));
         Spaces.Add(new CountryProperty("Slovakia", 18, 180, ColorGroup.Orange, [14, 70, 200, 550, 750, 950], 100));
         Spaces.Add(new CountryProperty("Hungary", 19, 200, ColorGroup.Orange, [16, 80, 220, 600, 800, 1000], 100));
         Spaces.Add(new SpecialSpace("Free Parking", 20, SpecialSpaceType.FreeParking));
@@ -46,7 +46,7 @@ public class Board
         Spaces.Add(new SpecialSpace("Go To Jail", 30, SpecialSpaceType.GoToJail));
         Spaces.Add(new CountryProperty("Canada", 31, 300, ColorGroup.Green, [26, 130, 390, 900, 1100, 1275], 200));
         Spaces.Add(new CountryProperty("Germany", 32, 300, ColorGroup.Green, [26, 130, 390, 900, 1100, 1275], 200));
-        Spaces.Add(new SpecialSpace("Community Chest", 33, SpecialSpaceType.Treasure));
+        Spaces.Add(new SpecialSpace("Treasure", 33, SpecialSpaceType.Treasure));
         Spaces.Add(new CountryProperty("France", 34, 320, ColorGroup.Green, [28, 150, 450, 1000, 1200, 1400], 200));
         Spaces.Add(new RailroadProperty("JFK Airport", 35));
         Spaces.Add(new SpecialSpace("Chance", 36, SpecialSpaceType.Chance));

@@ -601,6 +601,8 @@ public class Game
             case SpecialSpaceType.Treasure:
                 var treasureCardDrawn = _treasureCards[_random.Next(0,_treasureCards.Count())];
                 _logger.LogInformation($"Drawed treasure card: {treasureCardDrawn.FlavorText}");
+                
+                _treasureCardsDrawn.Add(specialSpace.BoardPosition, treasureCardDrawn);
                 switch (treasureCardDrawn.TreasureOutcome)
                 {
                     case TreasureOutcome.AdvanceToGo:
@@ -672,7 +674,8 @@ public class Game
                         foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
                         {
                             TransactionsHistory.AddTransaction(
-                                new TransactionInfo {
+                                new TransactionInfo
+                                {
                                     TransactionType = TransactionType.Fine,
                                     SenderId = otherPlayer.Id,
                                     ReceiverId = currentPlayer.Id,
@@ -693,8 +696,8 @@ public class Game
             case SpecialSpaceType.Chance:
                 var chanceCardDrawn = _chanceCards[_random.Next(0,_chanceCards.Count())];
                 _logger.LogInformation($"Drawed chance card: {chanceCardDrawn.FlavorText}");
-                var initialPosition = specialSpace.BoardPosition;
-                _chanceCardsDrawn.Add(initialPosition, chanceCardDrawn);
+                var chanceSpacePosition = specialSpace.BoardPosition;
+                _chanceCardsDrawn.Add(chanceSpacePosition, chanceCardDrawn);
                 switch (chanceCardDrawn.ChanceOutcome)
                 {
                     case ChanceOutcome.AdvanceToGo:
@@ -704,17 +707,17 @@ public class Game
                         break;
                     case ChanceOutcome.AdvanceToProperty:
                         currentPlayer.MoveTo(chanceCardDrawn.PropertyDestination);
-                        HandleLandingActions(currentPlayer, initialPosition > chanceCardDrawn.PropertyDestination, totalDiceRoll);
+                        HandleLandingActions(currentPlayer, chanceSpacePosition > chanceCardDrawn.PropertyDestination, totalDiceRoll);
                         break;
                     case ChanceOutcome.AdvanceToNearestRailroad:
-                        var nearestRailroad = Board.GetNearestRailroad(initialPosition);
+                        var nearestRailroad = Board.GetNearestRailroad(chanceSpacePosition);
                         currentPlayer.MoveTo(nearestRailroad.BoardPosition);
-                        HandleLandingActions(currentPlayer, initialPosition > nearestRailroad.BoardPosition, totalDiceRoll, doubleRailroadRent:true);
+                        HandleLandingActions(currentPlayer, chanceSpacePosition > nearestRailroad.BoardPosition, totalDiceRoll, doubleRailroadRent:true);
                         break;
                     case ChanceOutcome.AdvanceToNearestUtility:
-                        var nearestUtility = Board.GetNearestUtility(initialPosition);
+                        var nearestUtility = Board.GetNearestUtility(chanceSpacePosition);
                         currentPlayer.MoveTo(nearestUtility.BoardPosition);
-                        HandleLandingActions(currentPlayer, initialPosition > nearestUtility.BoardPosition, totalDiceRoll, tenTimesUtilityRent: true);
+                        HandleLandingActions(currentPlayer, chanceSpacePosition > nearestUtility.BoardPosition, totalDiceRoll, tenTimesUtilityRent: true);
                         break;
                     case ChanceOutcome.ReceiveX:
                         TransactionsHistory.AddTransaction(
