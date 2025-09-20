@@ -2,8 +2,7 @@ name: Deploy to VPS
 
 on:
   push:
-    branches:
-      - main   # or dev if you want to auto-deploy dev branch
+    branches: [ "dev" ]
 
 jobs:
   deploy:
