@@ -9,7 +9,7 @@ public static class AuthMiddleware {
     }
     private static Task DoubleSubmitCookieMiddleware(HttpContext context, RequestDelegate next, string WSUrl)
     {
-        if (context.Request.Method == HttpMethods.Options)
+        if (context.Request.Method == HttpMethods.Options || context.Request.Method == HttpMethods.Get)
         {
             return next(context);
         }
