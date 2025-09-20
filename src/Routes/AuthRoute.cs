@@ -44,9 +44,9 @@ public static class AuthRoute
             });
         });
 
-        group.MapPost("/guest", async (string username, HttpResponse response, AuthService authService) =>
+        group.MapPost("/guest", (string username, HttpResponse response, AuthService authService) =>
         {
-            var guestId = Guid.NewGuid();;
+            var guestId = Guid.NewGuid();
 
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
@@ -66,13 +66,13 @@ public static class AuthRoute
             });
         });
 
-        group.MapGet("/me", [Authorize] async (ClaimsPrincipal user) =>
+        group.MapGet("/me", [Authorize] (ClaimsPrincipal user) =>
         {
             var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
 
             return Results.Ok(claim.Value);
         });
-        group.MapPost("/refresh", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (ClaimsPrincipal user, HttpResponse response, AuthService authService) =>
+        group.MapPost("/refresh", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (ClaimsPrincipal user, HttpResponse response, AuthService authService) =>
         {
             if (user.Claims == null) throw new InvalidOperationException("Why");
             var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
@@ -85,7 +85,7 @@ public static class AuthRoute
                 AccessToken = accessToken,
             });
         });
-        group.MapPost("/logout", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] async (HttpResponse response) =>
+        group.MapPost("/logout", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (HttpResponse response) =>
         {
             response.Cookies.Delete("XSRF-TOKEN");
             response.Cookies.Delete("AccessToken");

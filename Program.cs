@@ -8,172 +8,160 @@ using MonopolyServer.Services.Auth;
 using MonopolyServer.Database;
 using MonopolyServer.Repositories;
 using MonopolyServer.Utils;
-var builder = WebApplication.CreateBuilder(args);
-
-// Configure SignalR with Newtonsoft.Json to handle polymorphic types
-builder.Services.AddSignalR(options =>
+using MonopolyServer.Middleware;
+public class Program
 {
-    options.MaximumReceiveMessageSize = 102400; // 100 KB
-});
-builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddDbContext<MonopolyDbContext>();
-
-// Register event publisher
-builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
-builder.Services.AddSingleton<GameManager>();
-
-builder.Services.AddScoped<AuthService>();
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUserOAuthRepository, UserOAuthRepository>();
-
-builder.Services.AddHostedService<KafkaSignalRNotifierService>();
-
-var AllowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string>() ?? throw new Exception("AllowedOrigins is not declared");
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("CorsPolicy", policy =>
+    public static void Main(string[] args)
     {
-        policy.WithOrigins(AllowedOrigins.Split(", ")).AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
+        var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpClient();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Todo API", Description = "Keep track of your tasks", Version = "v1" });
-    var jwtSecurityScheme = new OpenApiSecurityScheme
-    {
-        BearerFormat = "JWT",
-        Name = "Authorization",
-        In = ParameterLocation.Cookie,
-        Type = SecuritySchemeType.Http,
-        Scheme = JwtBearerDefaults.AuthenticationScheme,
-        Reference = new OpenApiReference
-        {
-            Id = JwtBearerDefaults.AuthenticationScheme,
-            Type = ReferenceType.SecurityScheme
-        }
-    };
+        ConfigureServices(builder);
 
-    c.AddSecurityDefinition("Bearer", jwtSecurityScheme);
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {jwtSecurityScheme, Array.Empty<string>()}
-    });
-});
+        var app = builder.Build();
 
-// Access Token configuration
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        Helpers.ConfigureJwtBearer(options, builder.Configuration);
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var token = context.Request.Cookies["AccessToken"];
-                context.Token = token;
-                return Task.CompletedTask;
-            },
-        }; 
-    })
-    // Refresh Token configuration
-    .AddJwtBearer("RefreshTokenScheme", options =>
-    {
-        Helpers.ConfigureJwtBearer(options, builder.Configuration);
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                context.Token = context.Request.Cookies["RefreshToken"];
-                return Task.CompletedTask;
-            }
-        };
-    });
+        ConfigureMiddleware(app);
 
-
-
-builder.Services.AddAuthorization();
-
-var app = builder.Build();
-
-app.UseRouting();
-
-app.UseCors("CorsPolicy");
-app.UseAuthentication();
-
-var GAME_HUBS_URL="/gameHubs"; 
-
-app.Use((context, next) => {
-    if (context.Request.Method == HttpMethods.Options)
-    {
-        return next(context);
-    }
-    if (context.WebSockets.IsWebSocketRequest)
-    {
-        return next(context);
-    }
-    if (context.Request.Path.StartsWithSegments(GAME_HUBS_URL))
-    {
-        return next(context);
+        app.Run();
     }
 
-    var endpoint = context.GetEndpoint();
-
-    var scheme = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.AuthenticationSchemes;
-    var typeId = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>()?.TypeId;
-
-    //  XSRF-TOKEN Checks if authenticated and auth scheme used is default
-    if (scheme != "RefreshTokenScheme" && typeId != null && context.User.Identity.IsAuthenticated)
+    private static void ConfigureServices(WebApplicationBuilder builder)
     {
-        if (context.Request.Cookies.TryGetValue("XSRF-TOKEN", out var jwtXsrfToken))
+        // SignalR
+        builder.Services.AddSignalR(options =>
         {
-            string? headerXsrfToken = context.Request.Headers["XSRF-TOKEN"].FirstOrDefault();
+            options.MaximumReceiveMessageSize = 102400; // 100 KB
+        });
 
-            if (string.IsNullOrEmpty(headerXsrfToken) || headerXsrfToken != jwtXsrfToken)
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                context.Response.WriteAsync("Invalid XSRF token");
-                return Task.CompletedTask;
-            }
-        }
-        else
+        // Database
+        builder.Services.AddDbContext<MonopolyDbContext>();
+
+        // Dependencies
+        builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+        builder.Services.AddSingleton<GameManager>();
+        builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
+        builder.Services.AddScoped<IUserOAuthRepository, UserOAuthRepository>();
+        builder.Services.AddHostedService<KafkaSignalRNotifierService>();
+
+        // CORS
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string>() 
+                             ?? throw new Exception("AllowedOrigins is not declared");
+        builder.Services.AddCors(options =>
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.WriteAsync("Missing XSRF token");
+            options.AddPolicy("CorsPolicy", policy =>
+            {
+                policy.WithOrigins(allowedOrigins.Split(", "))
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            });
+        });
+
+        // Swagger
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "Todo API",
+                Description = "Keep track of your tasks",
+                Version = "v1"
+            });
+
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                In = ParameterLocation.Cookie,
+                Type = SecuritySchemeType.Http,
+                Scheme = JwtBearerDefaults.AuthenticationScheme,
+                Reference = new OpenApiReference
+                {
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+
+            c.AddSecurityDefinition("Bearer", jwtSecurityScheme);
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                { jwtSecurityScheme, Array.Empty<string>() }
+            });
+        });
+
+        // Authentication
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                Helpers.ConfigureJwtBearer(options, builder.Configuration);
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token = context.Request.Cookies["AccessToken"];
+                        return Task.CompletedTask;
+                    }
+                };
+            })
+            .AddJwtBearer("RefreshTokenScheme", options =>
+            {
+                Helpers.ConfigureJwtBearer(options, builder.Configuration);
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token = context.Request.Cookies["RefreshToken"];
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
+        builder.Services.AddAuthorization();
+
+        // HttpClient
+        builder.Services.AddHttpClient();
+
+        // Sentry
+        builder.WebHost.UseSentry(o =>
+        {
+            o.Dsn = builder.Configuration.GetSection("Sentry").GetValue<string>("Dsn");
+            o.Debug = true; // enable SDK debug logs
+        });
+    }
+
+    private static void ConfigureMiddleware(WebApplication app)
+    {
+        app.UseRouting();
+        app.UseCors("CorsPolicy");
+        app.UseAuthentication();
+
+        var gameHubsUrl = "/gameHubs";
+        AuthMiddleware.Use(app, gameHubsUrl);
+        app.MapHub<GameHubs>(gameHubsUrl);
+
+        app.UseAuthorization();
+
+        AuthRoute.Map(app);
+        GameRoute.Map(app);
+
+        // Root redirect
+        app.MapGet("/", context =>
+        {
+            context.Response.Redirect("/swagger");
             return Task.CompletedTask;
+        });
+
+        // Swagger (only in development)
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Todo API V1");
+            });
         }
+
+        // Test message to Sentry
+        SentrySdk.CaptureMessage("Hello Sentry");
     }
-    return next(context);
-});
-
-app.MapHub<GameHubs>(GAME_HUBS_URL);
-
-app.UseAuthorization();
-
-AuthRoute.Map(app);
-GameRoute.Map(app);
-
-app.MapGet("/", context =>
-{
-    context.Response.Redirect("/swagger");
-    return Task.CompletedTask;
-});
-
-
-
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Todo API V1");
-    });
 }
-
-app.Run();
