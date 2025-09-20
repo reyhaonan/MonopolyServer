@@ -1,11 +1,12 @@
 services:
   app:
     build: .
+    # image: ghcr.io/reyhaonan/monopolyserver:dev
     container_name: monopoly-app
     ports:
       - "8080:8080"
     environment:
-      # Database (matches your appsettings.json structure)
+      # Database
       Database__Host: db
       Database__Port: ${DB_PORT}
       Database__Username: ${DB_USER}
@@ -26,6 +27,8 @@ services:
       OAuth2__Discord__ClientId: ${DISCORD_CLIENT_ID}
       OAuth2__Discord__ClientSecret: ${DISCORD_CLIENT_SECRET}
 
+      Sentry__Dsn: ${SENTRY_DSN}
+
       AllowedOrigins: ${ALLOWED_ORIGINS}
 
     depends_on:
@@ -42,7 +45,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT}"
     volumes:
       - db-data:/var/lib/postgresql/data
 
@@ -53,7 +56,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+      - "2181"
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -61,8 +64,8 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
-      - "29092:29092"
+      - "9092"
+      - "29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
