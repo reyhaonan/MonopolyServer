@@ -51,7 +51,7 @@ public class Program
             options.AddPolicy("CorsPolicy", policy =>
             {
                 policy.WithOrigins(allowedOrigins.Split(", "))
-                      .AllowAnyHeader()
+                      .WithHeaders(["XSRF-TOKEN"])
                       .AllowAnyMethod()
                       .AllowCredentials();
             });
