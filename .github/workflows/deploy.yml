@@ -6,18 +6,17 @@ on:
 
 jobs:
   deploy:
+    environment: "development"
     runs-on: ubuntu-latest
-
     steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.8.0
+      - name: Execute remote SSH commands using password
+        uses: appleboy/ssh-action@v1
         with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Deploy to VPS
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} << 'EOF'
+          host: ${{ vars.SSH_HOST }}
+          username: ${{ vars.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
             cd /opt/monopoly
             docker compose pull
             docker compose up -d
-          EOF
+
