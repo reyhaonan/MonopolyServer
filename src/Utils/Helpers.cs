@@ -24,7 +24,8 @@ public static class Helpers
             Expires = accessTokenExpiry,
             HttpOnly = true,
             SameSite = SameSiteMode.None,
-            Secure = true
+            Secure = true,
+            Path = "/; Partitioned" 
         };
 
         response.Cookies.Delete("XSRF-TOKEN");
@@ -32,7 +33,8 @@ public static class Helpers
         {
             Expires = accessTokenExpiry,
             SameSite = SameSiteMode.None,
-            Secure = true
+            Secure = true,
+            Path = "/; Partitioned" 
         });
 
         response.Cookies.Delete("AccessToken");
@@ -54,13 +56,15 @@ public static class Helpers
             Expires = refreshTokenExpiry,
             HttpOnly = true,
             SameSite = SameSiteMode.None,
-            Secure = true
+            Secure = true,
+            Path = "/; Partitioned" 
         };
         var usernameCookieOptions = new CookieOptions
         {
             Expires = refreshTokenExpiry,
             SameSite = SameSiteMode.None,
-            Secure = true
+            Secure = true,
+            Path = "/; Partitioned" 
         };
 
         response.Cookies.Delete("RefreshToken");
