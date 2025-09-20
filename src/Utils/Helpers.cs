@@ -23,18 +23,16 @@ public static class Helpers
         {
             Expires = accessTokenExpiry,
             HttpOnly = true,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true,
-            Path = "/; Partitioned" 
         };
 
         response.Cookies.Delete("XSRF-TOKEN");
         response.Cookies.Append("XSRF-TOKEN", xsrfToken, new CookieOptions
         {
             Expires = accessTokenExpiry,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true,
-            Path = "/; Partitioned" 
         });
 
         response.Cookies.Delete("AccessToken");
@@ -55,16 +53,14 @@ public static class Helpers
         {
             Expires = refreshTokenExpiry,
             HttpOnly = true,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true,
-            Path = "/; Partitioned" 
         };
         var usernameCookieOptions = new CookieOptions
         {
             Expires = refreshTokenExpiry,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true,
-            Path = "/; Partitioned" 
         };
 
         response.Cookies.Delete("RefreshToken");
@@ -88,7 +84,7 @@ public static class Helpers
             ValidateIssuerSigningKey = true,
             ValidIssuer = configuration["JWT:Issuer"],
             ValidAudience = configuration["JWT:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("JWT").GetValue<string>("Key") ?? throw new Exception("Missing Jwt Key")))
         };
     }
 }
