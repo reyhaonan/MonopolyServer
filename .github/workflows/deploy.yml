@@ -13,10 +13,11 @@ jobs:
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ vars.SSH_HOST }}
-          username: ${{ vars.SSH_USERNAME }}
+          username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /opt/monopoly
             docker compose pull
             docker compose up -d
+            docker image prune -af
 
