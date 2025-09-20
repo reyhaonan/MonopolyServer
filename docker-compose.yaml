@@ -31,8 +31,6 @@ services:
 
       AllowedOrigins: ${ALLOWED_ORIGINS}
 
-      CookieDomain: ${COOKIE_DOMAIN}
-
     depends_on:
       - db
       - kafka

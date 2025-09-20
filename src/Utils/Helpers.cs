@@ -25,6 +25,7 @@ public static class Helpers
             HttpOnly = true,
             SameSite = SameSiteMode.Strict,
             Secure = true,
+            Domain = "fartington.my.id"
         };
 
         response.Cookies.Delete("XSRF-TOKEN");
@@ -33,6 +34,7 @@ public static class Helpers
             Expires = accessTokenExpiry,
             SameSite = SameSiteMode.Strict,
             Secure = true,
+            Domain = "fartington.my.id"
         });
 
         response.Cookies.Delete("AccessToken");
@@ -55,12 +57,14 @@ public static class Helpers
             HttpOnly = true,
             SameSite = SameSiteMode.Strict,
             Secure = true,
+            Domain = "fartington.my.id"
         };
         var usernameCookieOptions = new CookieOptions
         {
             Expires = refreshTokenExpiry,
             SameSite = SameSiteMode.Strict,
             Secure = true,
+            Domain = "fartington.my.id"
         };
 
         response.Cookies.Delete("RefreshToken");
