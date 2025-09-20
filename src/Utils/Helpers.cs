@@ -23,7 +23,7 @@ public static class Helpers
         {
             Expires = accessTokenExpiry,
             HttpOnly = true,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true
         };
 
@@ -31,7 +31,7 @@ public static class Helpers
         response.Cookies.Append("XSRF-TOKEN", xsrfToken, new CookieOptions
         {
             Expires = accessTokenExpiry,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true
         });
 
@@ -53,13 +53,13 @@ public static class Helpers
         {
             Expires = refreshTokenExpiry,
             HttpOnly = true,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true
         };
         var usernameCookieOptions = new CookieOptions
         {
             Expires = refreshTokenExpiry,
-            SameSite = SameSiteMode.None,
+            SameSite = SameSiteMode.Strict,
             Secure = true
         };
 
