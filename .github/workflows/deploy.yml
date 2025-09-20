@@ -2,9 +2,9 @@ name: Deploy to VPS
 
 on:
   workflow_run:
-    workflows: [Docker Publish]
-    types:
-      - completed
+    workflows: ["Docker Publish"]
+    branches: [ "dev" ]
+    types: [completed]
 
 jobs:
   on-success:
