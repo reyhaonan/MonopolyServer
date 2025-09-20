@@ -1,8 +1,10 @@
 name: Deploy to VPS
 
 on:
-  push:
-    branches: [ "dev" ]
+  workflow_run:
+    workflows: ["Docker"]
+    types:
+      - completed
 
 jobs:
   deploy:
