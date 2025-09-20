@@ -15,6 +15,21 @@ jobs:
           host: ${{ vars.SSH_HOST }}
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          envs: |
+            DB_PORT
+            DB_USER
+            DB_PASS
+            DB_NAME
+            KAFKA_GROUP
+            KAFKA_TOPIC_EVENTS
+            KAFKA_TOPIC_CONTROL
+            JWT_ISSUER
+            JWT_AUDIENCE
+            JWT_KEY
+            DISCORD_CLIENT_ID
+            DISCORD_CLIENT_SECRET
+            SENTRY_DSN
+            ALLOWED_ORIGINS
           script: |
             cd /opt/monopoly
             docker compose pull
