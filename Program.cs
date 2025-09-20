@@ -150,6 +150,7 @@ public class Program
             context.Response.Redirect("/swagger");
             return Task.CompletedTask;
         });
+        app.MapGet("/ping", () => "pong");
 
         // Swagger (only in development)
         if (app.Environment.IsDevelopment())
