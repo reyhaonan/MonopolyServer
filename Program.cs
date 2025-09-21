@@ -43,6 +43,11 @@ public class Program
         builder.Services.AddScoped<IUserOAuthRepository, UserOAuthRepository>();
         builder.Services.AddHostedService<KafkaSignalRNotifierService>();
 
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            options.ListenLocalhost(8080);
+        });
+
         // CORS
         var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string>() 
                              ?? throw new Exception("AllowedOrigins is not declared");
