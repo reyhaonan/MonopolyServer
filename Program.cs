@@ -174,8 +174,5 @@ public class Program
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Todo API V1");
             });
         }
-
-        // Test message to Sentry
-        SentrySdk.CaptureMessage("Hello Sentry");
     }
 }
