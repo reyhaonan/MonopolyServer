@@ -31,7 +31,7 @@ public class AuthService
 
     public async Task<DiscordTokenResponse> GetDiscordAccessToken(string code)
     {
-        Console.WriteLine($"BBB {_config["OAuth2:Discord:ClientSecret"]}");
+        Console.WriteLine($"Redirect {_config["OAuth2:Discord:RedirectUrl"]}");
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 // ima invalidate this later
