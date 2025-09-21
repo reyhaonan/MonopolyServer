@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using MonopolyServer.Database.Enums;
@@ -13,7 +14,7 @@ public static class AuthRoute
     {
         var group = app.MapGroup("/auth");
 
-        group.MapPost("/discord", async (AuthRequest req, HttpResponse response, AuthService authService) =>
+        group.MapPost("/discord", async (AuthRequest req, HttpResponse response, AuthService authService, IConfiguration configuration) =>
         {
             var discordTokenResponse = await authService.GetDiscordAccessToken(req.code);
 
@@ -24,8 +25,11 @@ public static class AuthRoute
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
-            var accessToken = Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry);
-            Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(),user.Username, refreshTokenExpiry);
+            
+            var cookieDomain = configuration.GetValue<string>("CookieDomain") ?? throw new Exception("CookieDomain is not set");
+
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, user.Id.ToString(), accessTokenExpiry, cookieDomain);
+            Helpers.SetRefreshTokenCookie(response, authService, user.Id.ToString(),user.Username, refreshTokenExpiry, cookieDomain);
 
             return TypedResults.Ok(new
             {
@@ -44,16 +48,16 @@ public static class AuthRoute
             });
         });
 
-        group.MapPost("/guest", (string username, HttpResponse response, AuthService authService) =>
+        group.MapPost("/guest", (string username, HttpResponse response, AuthService authService, IConfiguration configuration) =>
         {
             var guestId = Guid.NewGuid();
 
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
             var refreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
-            
-            var accessToken = Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry);
-            Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), username, refreshTokenExpiry);
+            var cookieDomain = configuration.GetValue<string>("CookieDomain") ?? throw new Exception("CookieDomain is not set");
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, guestId.ToString(), accessTokenExpiry, cookieDomain);
+            Helpers.SetRefreshTokenCookie(response, authService, guestId.ToString(), username, refreshTokenExpiry, cookieDomain);
 
             return TypedResults.Ok(new
             {
@@ -72,24 +76,42 @@ public static class AuthRoute
 
             return Results.Ok(claim.Value);
         });
-        group.MapPost("/refresh", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (ClaimsPrincipal user, HttpResponse response, AuthService authService) =>
+        group.MapPost("/refresh", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (ClaimsPrincipal user, HttpResponse response, AuthService authService, IConfiguration configuration) =>
         {
             if (user.Claims == null) throw new InvalidOperationException("Why");
             var claim = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Sid) ?? throw new InvalidDataException("No SID in the jwt(?)");
 
             var accessTokenExpiry = DateTime.UtcNow.AddMinutes(60);
-            var accessToken = Helpers.SetAccessTokenCookies(response, authService, claim.Value, accessTokenExpiry);
+
+            
+            var cookieDomain = configuration.GetValue<string>("CookieDomain") ?? throw new Exception("CookieDomain is not set");
+            var accessToken = Helpers.SetAccessTokenCookies(response, authService, claim.Value, accessTokenExpiry, cookieDomain);
 
             return Results.Ok(new
             {
                 AccessToken = accessToken,
             });
         });
-        group.MapPost("/logout", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (HttpResponse response) =>
+        group.MapPost("/logout", [Authorize(AuthenticationSchemes = "RefreshTokenScheme")] (HttpResponse response, IConfiguration configuration) =>
         {
-            response.Cookies.Delete("XSRF-TOKEN");
-            response.Cookies.Delete("AccessToken");
-            response.Cookies.Delete("RefreshToken");
+            var cookieDomain = configuration.GetValue<string>("CookieDomain") ?? throw new Exception("CookieDomain is not set");
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Domain = cookieDomain,
+                Path="/"
+            };
+            response.Cookies.Delete("XSRF-TOKEN", new CookieOptions
+            {
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Domain = cookieDomain,
+                Path="/"
+            });
+            response.Cookies.Delete("AccessToken", cookieOptions);
+            response.Cookies.Delete("RefreshToken", cookieOptions);
 
             return Results.Ok();
         });

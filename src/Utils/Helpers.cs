@@ -8,72 +8,95 @@ namespace MonopolyServer.Utils;
 
 public static class Helpers
 {
-    public static string SetAccessTokenCookies(HttpResponse response, AuthService authService, string userId, DateTime accessTokenExpiry)
+    private static CookieOptions BuildCookieOptions(DateTime expiry, string domain, bool httpOnly = false)
+    {
+        return new CookieOptions
+        {
+            Expires = expiry,
+            HttpOnly = httpOnly,
+            SameSite = SameSiteMode.Strict,
+            Secure = true,
+            Domain = domain,
+            Path = "/"
+        };
+    }
+
+    private static CookieOptions BuildDeleteOptions(string domain, bool httpOnly = false)
+    {
+        return new CookieOptions
+        {
+            Expires = DateTime.UnixEpoch, // past date = delete
+            HttpOnly = httpOnly,
+            SameSite = SameSiteMode.Strict,
+            Secure = true,
+            Domain = domain,
+            Path = "/"
+        };
+    }
+
+    private static void SetCookie(HttpResponse response, string name, string value, CookieOptions options)
+    {
+        response.Cookies.Delete(name, options); // delete with same attributes
+        response.Cookies.Append(name, value, options);
+    }
+
+    public static string SetAccessTokenCookies(
+        HttpResponse response,
+        AuthService authService,
+        string userId,
+        DateTime accessTokenExpiry,
+        string cookieDomain)
     {
         var xsrfToken = authService.GenerateXsrfToken();
 
         var accessTokenClaims = new Dictionary<string, object>
         {
-            [ClaimTypes.Sid] = userId,
+            [ClaimTypes.Sid] = userId
         };
 
         var accessToken = authService.GenerateJWT(accessTokenClaims, accessTokenExpiry);
 
-        var accessTokenCookieOptions = new CookieOptions
-        {
-            Expires = accessTokenExpiry,
-            HttpOnly = true,
-            SameSite = SameSiteMode.Strict,
-            Secure = true,
-            Domain = "fartington.my.id"
-        };
+        // Access token (HttpOnly)
+        SetCookie(response, "AccessToken", accessToken, BuildCookieOptions(accessTokenExpiry, cookieDomain, httpOnly: true));
 
-        response.Cookies.Delete("XSRF-TOKEN");
-        response.Cookies.Append("XSRF-TOKEN", xsrfToken, new CookieOptions
-        {
-            Expires = accessTokenExpiry,
-            SameSite = SameSiteMode.Strict,
-            Secure = true,
-            Domain = "fartington.my.id"
-        });
-
-        response.Cookies.Delete("AccessToken");
-        response.Cookies.Append("AccessToken", accessToken, accessTokenCookieOptions);
+        // XSRF token (not HttpOnly)
+        SetCookie(response, "XSRF-TOKEN", xsrfToken, BuildCookieOptions(accessTokenExpiry, cookieDomain));
 
         return accessToken;
     }
 
-    public static string SetRefreshTokenCookie(HttpResponse response, AuthService authService, string userId, string username, DateTime refreshTokenExpiry)
+    public static string SetRefreshTokenCookie(
+        HttpResponse response,
+        AuthService authService,
+        string userId,
+        string username,
+        DateTime refreshTokenExpiry,
+        string cookieDomain)
     {
         var refreshTokenClaims = new Dictionary<string, object>
         {
             [ClaimTypes.Sid] = userId
         };
+
         var refreshToken = authService.GenerateJWT(refreshTokenClaims, refreshTokenExpiry);
 
-        var refreshTokenCookieOptions = new CookieOptions
-        {
-            Expires = refreshTokenExpiry,
-            HttpOnly = true,
-            SameSite = SameSiteMode.Strict,
-            Secure = true,
-            Domain = "fartington.my.id"
-        };
-        var usernameCookieOptions = new CookieOptions
-        {
-            Expires = refreshTokenExpiry,
-            SameSite = SameSiteMode.Strict,
-            Secure = true,
-            Domain = "fartington.my.id"
-        };
+        // Refresh token (HttpOnly)
+        SetCookie(response, "RefreshToken", refreshToken, BuildCookieOptions(refreshTokenExpiry, cookieDomain, httpOnly: true));
 
-        response.Cookies.Delete("RefreshToken");
-        response.Cookies.Append("RefreshToken", refreshToken, refreshTokenCookieOptions);
-
-        response.Cookies.Delete("Username");
-        response.Cookies.Append("Username", username, usernameCookieOptions);
+        // Username (not HttpOnly)
+        SetCookie(response, "Username", username, BuildCookieOptions(refreshTokenExpiry, cookieDomain));
 
         return refreshToken;
+    }
+
+    public static void ClearAuthCookies(HttpResponse response, string cookieDomain)
+    {
+        // Delete with correct HttpOnly flags
+        response.Cookies.Delete("AccessToken", BuildDeleteOptions(cookieDomain, httpOnly: true));
+        response.Cookies.Delete("RefreshToken", BuildDeleteOptions(cookieDomain, httpOnly: true));
+
+        response.Cookies.Delete("XSRF-TOKEN", BuildDeleteOptions(cookieDomain));
+        response.Cookies.Delete("Username", BuildDeleteOptions(cookieDomain));
     }
 
     public static void ConfigureJwtBearer(JwtBearerOptions options, IConfiguration configuration)
@@ -88,7 +111,10 @@ public static class Helpers
             ValidateIssuerSigningKey = true,
             ValidIssuer = configuration["JWT:Issuer"],
             ValidAudience = configuration["JWT:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("JWT").GetValue<string>("Key") ?? throw new Exception("Missing Jwt Key")))
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(
+                    configuration.GetSection("JWT").GetValue<string>("Key") 
+                    ?? throw new Exception("Missing Jwt Key")))
         };
     }
 }
