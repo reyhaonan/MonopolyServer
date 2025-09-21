@@ -128,3 +128,11 @@ jobs:
             docker compose pull
             docker compose up -d
             docker image prune -af 
+
+            sleep 10
+
+            if ! curl -fsS http://localhost:8080/ping; then
+              echo "🚨 Health check failed!"
+              exit 1
+            fi
+            echo "✅ Health check passed!"
