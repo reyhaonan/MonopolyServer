@@ -43,6 +43,8 @@ public class AuthService
                 { "scope", "identify" }
             });
         var response = await _httpClient.PostAsync("https://discord.com/api/oauth2/token", content);
+        var re = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Actual response: {re}");
         response.EnsureSuccessStatusCode();
         var tokenResponseData = await response.Content.ReadAsStringAsync();
 

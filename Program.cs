@@ -76,8 +76,8 @@ public class Program
         {
             c.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "Todo API",
-                Description = "Keep track of your tasks",
+                Title = "Monopoly API",
+                Description = "Monopoly",
                 Version = "v1"
             });
 
@@ -138,7 +138,6 @@ public class Program
         builder.WebHost.UseSentry(o =>
         {
             o.Dsn = builder.Configuration.GetSection("Sentry").GetValue<string>("Dsn");
-            o.Debug = true; // enable SDK debug logs
         });
     }
 
