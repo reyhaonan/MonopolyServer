@@ -48,12 +48,12 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (game.CurrentPhase != GamePhase.WaitingForPlayers) throw new InvalidOperationException("Game is already started");
-        if (game.ActivePlayers.Any(p => p.Id == newPlayerId)) throw new InvalidOperationException("Player already joined the game");
-        if (game.ActivePlayers.Any(p => p.HexColor == hexColor)) throw new InvalidOperationException("Player with the same color already exist");
+        if (game.Players.Any(p => p.Id == newPlayerId)) throw new InvalidOperationException("Player already joined the game");
+        if (game.Players.Any(p => p.HexColor == hexColor)) throw new InvalidOperationException("Player with the same color already exist");
         
         var newPlayer = game.AddPlayer(playerName, hexColor, newPlayerId);
 
-        await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameId, new { Players = game.ActivePlayers });
+        await _eventPublisher.PublishGameControlEvent("PlayerJoined", gameId, new { Players = game.Players });
 
         return newPlayer;
     }
@@ -85,7 +85,7 @@ public class GameManager
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
 
-        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.  current active are: {game.GetCurrentPlayer().Id}");
+        if (!playerId.Equals(game.GetCurrentActivePlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.  current active are: {game.GetCurrentActivePlayer().Id}");
 
         var result = game.RollDice();
 
@@ -105,7 +105,7 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
+        if (!playerId.Equals(game.GetCurrentActivePlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         int nextPlayerIndex = game.EndTurn();
 
@@ -120,7 +120,7 @@ public class GameManager
 
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
+        if (!playerId.Equals(game.GetCurrentActivePlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         var transactions = game.PayToGetOutOfJail();
 
@@ -138,7 +138,7 @@ public class GameManager
 
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        if (!playerId.Equals(game.GetCurrentPlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
+        if (!playerId.Equals(game.GetCurrentActivePlayer().Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         game.UseGetOutOfJailCard();
 
@@ -175,7 +175,7 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        Player currentPlayer = game.GetCurrentPlayer();
+        Player currentPlayer = game.GetCurrentActivePlayer();
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         var (propertyId, transactions) = game.BuyProperty();
@@ -194,7 +194,7 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        Player currentPlayer = game.GetCurrentPlayer();
+        Player currentPlayer = game.GetCurrentActivePlayer();
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
         var transactions = game.SellProperty(propertyId);
@@ -212,7 +212,7 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        Player currentPlayer = game.GetCurrentPlayer();
+        Player currentPlayer = game.GetCurrentActivePlayer();
 
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
@@ -230,7 +230,7 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        Player currentPlayer = game.GetCurrentPlayer();
+        Player currentPlayer = game.GetCurrentActivePlayer();
 
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
@@ -248,7 +248,7 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        Player currentPlayer = game.GetCurrentPlayer();
+        Player currentPlayer = game.GetCurrentActivePlayer();
 
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 
@@ -266,7 +266,7 @@ public class GameManager
     {
         Game game = GetGame(gameId);
         if (!game.PlayerIsInGame(playerId)) throw new InvalidOperationException("You are not in the game to perform this action");
-        Player currentPlayer = game.GetCurrentPlayer();
+        Player currentPlayer = game.GetCurrentActivePlayer();
 
         if (!playerId.Equals(currentPlayer.Id)) throw new InvalidOperationException($"Player {playerId} are not permitted for this action.");
 

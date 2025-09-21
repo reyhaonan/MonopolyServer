@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 
 namespace MonopolyServer.Models;
+
 public class Player
 {
     const int MAX_POSITION = 40;
@@ -124,5 +125,11 @@ public class Player
     public void ResetConsecutiveDouble()
     {
         ConsecutiveDoubles = 0;
+    }
+
+    public void DeclareBankcruptcy()
+    {
+        IsBankrupt = true;
+        PropertiesOwned = [];
     }
 }

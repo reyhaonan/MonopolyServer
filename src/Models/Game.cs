@@ -33,9 +33,9 @@ public class Game
     [JsonInclude]
     public Guid GameId { get; init; }
 
-    // List of all active players (still playing)
     [JsonInclude]
-    public List<Player> ActivePlayers { get; private set; } = [];
+    public List<Player> Players { get; private set; } = [];
+    public List<Player> ActivePlayers => Players.Where(p => !p.IsBankrupt).ToList();
     [JsonInclude]
     public Board Board { get; private set; }
     [JsonInclude]
@@ -250,28 +250,34 @@ public class Game
     #region Player Management
     public Player AddPlayer(string playerName, string hexColor, Guid newPlayerId)
     {
-        if (ActivePlayers.Count >= GameConfig.MaxPlayers)
+        if (Players.Count >= GameConfig.MaxPlayers)
         {
             throw new InvalidOperationException("Room is full");
         }
 
         var newPlayer = new Player(playerName, hexColor, newPlayerId);
-        ActivePlayers.Add(newPlayer);
+        Players.Add(newPlayer);
         return newPlayer;
     }
 
-    public Player GetCurrentPlayer()
+    public Player GetCurrentActivePlayer()
     {
-        if (CurrentPlayerIndex < 0 || CurrentPlayerIndex >= ActivePlayers.Count)
+        if (CurrentPlayerIndex < 0 || CurrentPlayerIndex >= Players.Count)
         {
             throw new InvalidOperationException("No current player or invalid index.");
         }
-        return ActivePlayers[CurrentPlayerIndex];
+        var currentPlayer = Players[CurrentPlayerIndex];
+        if (currentPlayer.IsBankrupt) throw new InvalidOperationException("How are you bankrupt but active?");
+        return currentPlayer;
     }
 
-    public Player? GetPlayerById(Guid playerId)
+    public Player? GetActivePlayerById(Guid playerId)
     {
         return ActivePlayers.FirstOrDefault(p => p.Id == playerId);
+    }
+    public Player? GetPlayerById(Guid playerId)
+    {
+        return Players.FirstOrDefault(p => p.Id == playerId);
     }
 
     public bool PlayerIsInGame(Guid playerId)
@@ -292,10 +298,14 @@ public class Game
     #region Turn Management
     private int NextPlayer()
     {
-        _logger.LogInformation($"Invoked next player {CurrentPlayerIndex}, Count: {ActivePlayers.Count}");
+        _logger.LogInformation($"Invoked next player {CurrentPlayerIndex}, Count: {Players.Count}");
 
         // Use the modulo operator to loop back to 0
-        CurrentPlayerIndex = (CurrentPlayerIndex + 1) % ActivePlayers.Count;
+        do
+        {
+            CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+        }
+        while (Players[CurrentPlayerIndex].IsBankrupt);
 
         return CurrentPlayerIndex;
     }
@@ -309,7 +319,7 @@ public class Game
             throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
         }
 
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
 
         if (!currentPlayer.IsInJail)
         {
@@ -348,7 +358,7 @@ public class Game
             throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action");
         }
 
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
 
         if (!currentPlayer.IsInJail)
         {
@@ -369,7 +379,7 @@ public class Game
     #region Game flow
     public List<Player> StartGame()
     {
-        if (ActivePlayers.Count < GameConfig.MinPlayers)
+        if (Players.Count < GameConfig.MinPlayers)
         {
             throw new InvalidOperationException("Cannot start a game with fewer than the minimum number of players.");
         }
@@ -379,17 +389,17 @@ public class Game
             throw new InvalidOperationException($"Game {GameId} has already started.");
         }
 
-        ActivePlayers = ActivePlayers.OrderBy(_ => _random.Next()).ToList();
+        Players = Players.OrderBy(_ => _random.Next()).ToList();
         CurrentPlayerIndex = 0;
         ChangeGamePhase(GamePhase.PlayerTurnStart);
 
         // Correct the starting money
-        foreach (Player player in ActivePlayers)
+        foreach (Player player in Players)
         {
             player.setMoney(GameConfig.StartingMoney);
         }
 
-        return ActivePlayers;
+        return Players;
     }
 
     public void UpdateGameConfig(GameConfig newGameConfig)
@@ -671,7 +681,7 @@ public class Game
                         currentPlayer.GoToJail();
                         break;
                     case TreasureOutcome.CollectXFromEveryPlayer:
-                        foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
+                        foreach (var otherPlayer in Players.Where(p => p.Id != currentPlayer.Id))
                         {
                             TransactionsHistory.AddTransaction(
                                 new TransactionInfo
@@ -766,7 +776,7 @@ public class Game
                         );
                         break;
                     case ChanceOutcome.PayEachPlayer:
-                        foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
+                        foreach (var otherPlayer in Players.Where(p => p.Id != currentPlayer.Id))
                         {
                             TransactionsHistory.AddTransaction(
                                 new TransactionInfo {
@@ -808,7 +818,7 @@ public class Game
         }
 
         var ownerId = property.OwnerId ?? throw new InvalidOperationException("Property is owned but has no OwnerId.");
-        Player owner = GetPlayerById(ownerId) ?? throw new InvalidOperationException("Owner not found.");
+        Player owner = GetActivePlayerById(ownerId) ?? throw new InvalidOperationException("Owner not found.");
 
         // Check if the owner is in jail and if the game config allows rent collection.
         if (owner.IsInJail && !GameConfig.AllowCollectRentOnJail)
@@ -865,7 +875,7 @@ public class Game
         }
 
         ChangeGamePhase(GamePhase.RollingDice);
-        var currentPlayer = GetCurrentPlayer();
+        var currentPlayer = GetCurrentActivePlayer();
         if (currentPlayer.Money < 0) throw new InvalidOperationException("Player is in debt");
 
         _chanceCardsDrawn.Clear();
@@ -938,7 +948,7 @@ public class Game
             throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action.");
         }
 
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
         if (currentPlayer.Money < 0)
         {
             throw new InvalidOperationException("You are broke. Declare bankruptcy to proceed.");
@@ -957,29 +967,30 @@ public class Game
 
     public (int currentPlayerIndex, bool isGameOver) DeclareBankcruptcy(Guid playerId)
     {
-        Player bankruptPlayer = GetPlayerById(playerId) ?? throw new InvalidOperationException("Player not found.");
+        Player bankruptPlayer = GetActivePlayerById(playerId) ?? throw new InvalidOperationException("Player not found.");
 
         foreach (Guid propertyId in bankruptPlayer.PropertiesOwned)
         {
             Board.GetPropertyById(propertyId).ResetProperty();
         }
 
-        bool isActivePlayer = GetCurrentPlayer().Id == bankruptPlayer.Id;
+        bool isActivePlayer = GetCurrentActivePlayer().Id == bankruptPlayer.Id;
 
-        ActivePlayers.Remove(bankruptPlayer);
+        bankruptPlayer.DeclareBankcruptcy();
+        ActiveTrades.RemoveAll(trade => trade.InitiatorId == bankruptPlayer.Id || trade.RecipientId == bankruptPlayer.Id);
 
         // Game over
         if (ActivePlayers.Count <= 1)
         {
+            NextPlayer();
             ChangeGamePhase(GamePhase.GameOver);
         }
         else if (isActivePlayer)
         {
+            NextPlayer();
             ChangeGamePhase(GamePhase.PlayerTurnStart);
         }
 
-        // Adjust the current player index if a player before them was removed.
-        CurrentPlayerIndex %= ActivePlayers.Count;
         return (CurrentPlayerIndex, ActivePlayers.Count <= 1);
     }
 
@@ -988,7 +999,7 @@ public class Game
     #region Property Management
     public (Guid, List<TransactionInfo>) BuyProperty()
     {
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
         // Action is only available on: [PostLandingActions, or on consecutive double and PlayerTurnStart]
         if (!CurrentPhase.Equals(GamePhase.PostLandingActions) && (!CurrentPhase.Equals(GamePhase.PlayerTurnStart) || currentPlayer.ConsecutiveDoubles <= 0))
         {
@@ -1042,7 +1053,7 @@ public class Game
         }
 
         Property property = Board.GetPropertyById(propertyId);
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
 
         if (!property.IsOwnedByPlayer(currentPlayer.Id))
         {
@@ -1104,7 +1115,7 @@ public class Game
         }
 
         Property property = Board.GetPropertyById(propertyId);
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
 
         if (!property.IsOwnedByPlayer(currentPlayer.Id))
         {
@@ -1158,7 +1169,7 @@ public class Game
         }
 
         Property property = Board.GetPropertyById(propertyId);
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
 
         if (!property.IsOwnedByPlayer(currentPlayer.Id))
         {
@@ -1222,7 +1233,7 @@ public class Game
             throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action.");
         }
 
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
         Property property = Board.GetPropertyById(propertyId);
 
         if (property is CountryProperty countryProperty)
@@ -1273,7 +1284,7 @@ public class Game
             throw new InvalidOperationException($"{CurrentPhase} is not the appropriate game phase for this action.");
         }
 
-        Player currentPlayer = GetCurrentPlayer();
+        Player currentPlayer = GetCurrentActivePlayer();
         Property property = Board.GetPropertyById(propertyId);
 
         if (property is CountryProperty countryProperty)
@@ -1351,8 +1362,8 @@ public class Game
 
     public Trade InitiateTrade(Guid initiatorId, Guid recipientId, List<Guid> propertyOffer, List<Guid> propertyCounterOffer, int moneyFromInitiator, int moneyFromRecipient, int getOutOfJailCardFromInitiator, int getOutOfJailCardFromRecipient)
     {
-        Player initiatorPlayer = GetPlayerById(initiatorId) ?? throw new InvalidOperationException("Invalid initiator player.");
-        Player recipientPlayer = GetPlayerById(recipientId) ?? throw new InvalidOperationException("Invalid recipient player.");
+        Player initiatorPlayer = GetActivePlayerById(initiatorId) ?? throw new InvalidOperationException("Invalid initiator player.");
+        Player recipientPlayer = GetActivePlayerById(recipientId) ?? throw new InvalidOperationException("Invalid recipient player.");
 
         _validateTrade(initiatorPlayer, recipientPlayer, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
@@ -1367,8 +1378,8 @@ public class Game
 
         if (trade.RecipientId != recipientId) throw new InvalidOperationException("Player is not permitted to perform this action.");
 
-        Player initiatorPlayer = GetPlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
-        Player recipientPlayer = GetPlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
+        Player initiatorPlayer = GetActivePlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
+        Player recipientPlayer = GetActivePlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
 
         _validateTrade(initiatorPlayer, recipientPlayer, trade.PropertyOffer, trade.PropertyCounterOffer, trade.MoneyFromInitiator, trade.MoneyFromRecipient, trade.GetOutOfJailCardFromInitiator, trade.GetOutOfJailCardFromRecipient);
 
@@ -1464,9 +1475,9 @@ public class Game
         if (trade.RecipientId != negotiatorId) throw new InvalidOperationException("Player is not permitted to perform this action.");
 
         // Last initiator become recipient
-        Player recipientPlayer = GetPlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
+        Player recipientPlayer = GetActivePlayerById(trade.InitiatorId) ?? throw new InvalidOperationException("Initiator not found.");
         // Last recipient become new initiator
-        Player negotiatorPlayer = GetPlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
+        Player negotiatorPlayer = GetActivePlayerById(trade.RecipientId) ?? throw new InvalidOperationException("Recipient not found.");
 
         _validateTrade(negotiatorPlayer, recipientPlayer, propertyOffer, propertyCounterOffer, moneyFromInitiator, moneyFromRecipient, getOutOfJailCardFromInitiator, getOutOfJailCardFromRecipient);
 
