@@ -298,7 +298,7 @@ public class Game
     #region Turn Management
     private int NextPlayer()
     {
-        _logger.LogInformation($"Invoked next player {CurrentPlayerIndex}, Count: {Players.Count}");
+        _logger.LogInformation($"Invoked next player {CurrentPlayerIndex}, Count: {Players.Count}, Active: {ActivePlayers.Count}");
 
         // Use the modulo operator to loop back to 0
         do
@@ -681,7 +681,7 @@ public class Game
                         currentPlayer.GoToJail();
                         break;
                     case TreasureOutcome.CollectXFromEveryPlayer:
-                        foreach (var otherPlayer in Players.Where(p => p.Id != currentPlayer.Id))
+                        foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
                         {
                             TransactionsHistory.AddTransaction(
                                 new TransactionInfo
@@ -776,7 +776,7 @@ public class Game
                         );
                         break;
                     case ChanceOutcome.PayEachPlayer:
-                        foreach (var otherPlayer in Players.Where(p => p.Id != currentPlayer.Id))
+                        foreach (var otherPlayer in ActivePlayers.Where(p => p.Id != currentPlayer.Id))
                         {
                             TransactionsHistory.AddTransaction(
                                 new TransactionInfo {
