@@ -39,7 +39,7 @@ public class AuthService
                 { "client_secret",  _config["OAuth2:Discord:ClientSecret"]??throw new Exception("OAuth2:Discord:ClientSecret is missing")  },
                 { "code", code },
                 { "grant_type", "authorization_code" },
-                { "redirect_uri", "http://localhost:5173/oauth2" },
+                { "redirect_uri", _config["OAuth2:Discord:RedirectUrl"] ?? throw new Exception("OAuth2:Discord:RedirectUrl is missing") },
                 { "scope", "identify" }
             });
         var response = await _httpClient.PostAsync("https://discord.com/api/oauth2/token", content);

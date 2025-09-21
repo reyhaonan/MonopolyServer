@@ -27,6 +27,7 @@ services:
       JWT__Key: ${JWT_KEY}
       OAuth2__Discord__ClientId: ${DISCORD_CLIENT_ID}
       OAuth2__Discord__ClientSecret: ${DISCORD_CLIENT_SECRET}
+      OAuth2__Discord__RedirectUrl: ${DISCORD_REDIRECT_URL}
 
       Sentry__Dsn: ${SENTRY_DSN}
 
