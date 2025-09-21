@@ -12,6 +12,7 @@ services:
       Database__Username: ${DB_USER}
       Database__Password: ${DB_PASS}
       Database__DatabaseName: ${DB_NAME}
+      Database__AutoMigrate: ${DB_AUTO_MIGRATE}
 
       # Kafka
       Kafka__BootstrapServers: kafka:9092

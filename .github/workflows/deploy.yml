@@ -107,6 +107,7 @@ jobs:
           DB_USER: ${{ vars.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASS }}
           DB_NAME: ${{ vars.DB_NAME }}
+          DB_AUTO_MIGRATE: ${{ vars.DB_AUTO_MIGRATE }}
           KAFKA_GROUP: ${{ vars.KAFKA_GROUP }}
           KAFKA_TOPIC_EVENTS: ${{ vars.KAFKA_TOPIC_EVENTS }}
           KAFKA_TOPIC_CONTROL: ${{ vars.KAFKA_TOPIC_CONTROL }}
@@ -122,7 +123,7 @@ jobs:
           host: ${{ vars.SSH_HOST }}
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: DB_PORT, DB_USER, DB_PASS, DB_NAME, KAFKA_GROUP, KAFKA_TOPIC_EVENTS, KAFKA_TOPIC_CONTROL, JWT_ISSUER, JWT_AUDIENCE, JWT_KEY, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SENTRY_DSN, ALLOWED_ORIGINS, COOKIE_DOMAIN
+          envs: DB_PORT, DB_USER, DB_PASS, DB_NAME, DB_AUTO_MIGRATE, KAFKA_GROUP, KAFKA_TOPIC_EVENTS, KAFKA_TOPIC_CONTROL, JWT_ISSUER, JWT_AUDIENCE, JWT_KEY, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SENTRY_DSN, ALLOWED_ORIGINS, COOKIE_DOMAIN
           script: |
             cd /opt/monopoly
             docker compose pull

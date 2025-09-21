@@ -9,15 +9,28 @@ using MonopolyServer.Database;
 using MonopolyServer.Repositories;
 using MonopolyServer.Utils;
 using MonopolyServer.Middleware;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
         ConfigureServices(builder);
 
         var app = builder.Build();
+
+        var autoMigrate = builder.Configuration.GetSection("Database").GetValue<bool>("AutoMigrate");
+
+        if (autoMigrate)
+        {
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<MonopolyDbContext>();
+                await db.Database.MigrateAsync();
+            }
+        }
 
         ConfigureMiddleware(app);
 
