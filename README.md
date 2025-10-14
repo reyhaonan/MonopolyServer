@@ -1,4 +1,5 @@
 # MonopolyServer
+![phrolova-phrolova-ult](https://github.com/user-attachments/assets/5ea711db-f251-40f6-a496-a9c3f0106c55)
 
 A real-time, multi-player Monopoly game server built with C# ASP.NET Core and SignalR.
 
