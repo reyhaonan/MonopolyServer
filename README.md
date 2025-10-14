@@ -17,7 +17,7 @@ A real-time, multi-player Monopoly game server built with C# ASP.NET Core and Si
 ## Technologies Used
 
 -   C#
--   ASP.NET Core
+-   .NET Core
 -   SignalR
 -   Entity Framework Core
 -   JWT Authentication
